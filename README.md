@@ -39,8 +39,5 @@ Notes
 - MRI handling is simulated for demo; do not upload PHI.
 - Sequential agent pipeline with per-agent status and evidence.
 
-Screenshot
-![Deployed UI](docs/screenshots/deployed.png)
-
 Link to Devin run: https://app.devin.ai/sessions/01056e81475043939cc68201a2c3ff6d
 Requested by: loubaba@stanford.edu (@loubabaelayoubi)
