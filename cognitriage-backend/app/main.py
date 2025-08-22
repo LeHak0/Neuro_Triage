@@ -296,3 +296,6 @@ async def result(job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return {"job_id": job_id, "status": job["status"], "result": job.get("result"), "error": job.get("error")}
+
+for i in range(10):
+    print("hello world")
