@@ -8,17 +8,19 @@ type AgentName =
   | "Imaging_Feature_Agent"
   | "Risk_Stratification_Agent"
   | "Evidence_RAG_Agent"
+  | "Clinical_Trials_Agent"
   | "Clinical_Note_Agent"
   | "Safety_Compliance_Agent"
 
-const agentIcons: Record<AgentName, string> = {
-  Ingestion_QC_Agent: "✅",
-  Imaging_Feature_Agent: "🧠",
-  Risk_Stratification_Agent: "⚖️",
-  Evidence_RAG_Agent: "📚",
-  Clinical_Note_Agent: "📝",
-  Safety_Compliance_Agent: "🛡️",
-}
+  const agentIcons: Record<AgentName, string> = {
+    Ingestion_QC_Agent: "✅",
+    Imaging_Feature_Agent: "🧠",
+    Risk_Stratification_Agent: "⚖️",
+    Evidence_RAG_Agent: "📚",
+    Clinical_Trials_Agent: "🔬",
+    Clinical_Note_Agent: "📄",
+    Safety_Compliance_Agent: "🛡️",
+  }
 
 function riskColor(tier?: RiskTier) {
   switch (tier) {
@@ -252,7 +254,7 @@ export default function App() {
             Agent Pipeline
           </h2>
           <div className="flex flex-col gap-2">
-            {(["Ingestion_QC_Agent","Imaging_Feature_Agent","Risk_Stratification_Agent","Evidence_RAG_Agent","Clinical_Note_Agent","Safety_Compliance_Agent"] as AgentName[]).map((a) => {
+          {(["Ingestion_QC_Agent","Imaging_Feature_Agent","Risk_Stratification_Agent","Evidence_RAG_Agent","Clinical_Trials_Agent","Clinical_Note_Agent","Safety_Compliance_Agent"] as AgentName[]).map((a) => {
               const st = status?.agents?.[a]?.status ?? "pending"
               return (
                 <div key={a} className="flex items-center justify-between border border-zinc-200 rounded-md px-3 py-2">
@@ -369,6 +371,53 @@ export default function App() {
           )}
         </section>
 
+      {/* clinical_trials_panel */}
+      <section className="lg:col-span-6 border border-zinc-200 rounded-lg p-4" aria-labelledby="trials-heading">
+          <h2 id="trials-heading" className="text-base font-semibold mb-3">
+            Clinical Trials
+          </h2>
+          {result?.result?.trials && result.result.trials.length > 0 ? (
+            <div className="space-y-3">
+              {result.result.trials.map((trial: any, i: number) => (
+                <div key={i} className="border rounded p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="font-medium text-sm">{trial.title}</div>
+                    <span className="text-xs px-2 py-1 rounded border bg-green-50 border-green-200 text-green-800">
+                      {trial.status}
+                    </span>
+                  </div>
+                  <div className="text-xs text-zinc-600 mb-2">
+                    NCT ID: {trial.nct_id}
+                  </div>
+                  <div className="text-sm text-zinc-700 mb-2">
+                    {trial.summary}
+                  </div>
+                  <div className="text-xs text-zinc-500 mb-2">
+                    Locations: {Array.isArray(trial.locations) ? trial.locations.join(', ') : 'Multiple locations available'}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-zinc-500">
+                      Match: {trial.match_reason}
+                    </span>
+                    <a 
+                      className="text-xs text-blue-700 underline" 
+                      href={trial.url} 
+                      target="_blank" 
+                      rel="noreferrer"
+                    >
+                      View on ClinicalTrials.gov
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-600">
+              {result?.result ? 'No matching clinical trials found.' : 'Clinical trials will appear after processing.'}
+            </p>
+          )}
+        </section>
+        
         {/* clinical_note */}
         <section className="lg:col-span-12 border border-zinc-200 rounded-lg p-4" aria-labelledby="note-heading">
           <h2 id="note-heading" className="text-base font-semibold mb-3">

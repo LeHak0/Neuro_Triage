@@ -21,7 +21,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# PubMed Service - Inline for now
+# =========================
+# PubMed Service (existing)
+# =========================
 class PubMedService:
     def __init__(self):
         # Set your email for NCBI (required)
@@ -31,20 +33,12 @@ class PubMedService:
     async def search_literature(self, query: str, max_results: int = 5) -> List[Dict]:
         """Search PubMed for literature related to patient findings"""
         try:
-            # Search for relevant papers
             search_results = await self._search_pubmed(query, max_results)
-            
             if not search_results:
                 return []
-            
-            # Get detailed information for each paper
             papers = await self._fetch_paper_details(search_results)
-            
-            # Rank papers by relevance (simplified ranking)
             ranked_papers = self._rank_papers(papers, query)
-            
             return ranked_papers[:max_results]
-            
         except Exception as e:
             print(f"Error searching literature: {e}")
             return []
@@ -52,7 +46,6 @@ class PubMedService:
     async def _search_pubmed(self, query: str, max_results: int) -> List[str]:
         """Search PubMed and return PMIDs"""
         search_url = f"{self.base_url}esearch.fcgi"
-        
         params = {
             "db": "pubmed",
             "term": query,
@@ -60,7 +53,6 @@ class PubMedService:
             "retmode": "json",
             "sort": "relevance"
         }
-        
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(search_url, params=params) as response:
@@ -74,15 +66,8 @@ class PubMedService:
         """Fetch detailed information for papers"""
         if not pmids:
             return []
-        
         fetch_url = f"{self.base_url}efetch.fcgi"
-        
-        params = {
-            "db": "pubmed",
-            "id": ",".join(pmids),
-            "retmode": "xml"
-        }
-        
+        params = {"db": "pubmed", "id": ",".join(pmids), "retmode": "xml"}
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(fetch_url, params=params) as response:
@@ -95,61 +80,45 @@ class PubMedService:
     def _parse_pubmed_xml(self, xml_data: str) -> List[Dict]:
         """Parse PubMed XML response"""
         papers = []
-        
         try:
             root = ET.fromstring(xml_data)
-            
             for article in root.findall(".//PubmedArticle"):
                 paper = self._extract_paper_info(article)
                 if paper:
                     papers.append(paper)
-                    
         except Exception as e:
             print(f"Error parsing XML: {e}")
-            
         return papers
     
     def _extract_paper_info(self, article) -> Optional[Dict]:
         """Extract relevant information from a single article"""
         try:
-            # Extract basic information
             title_elem = article.find(".//ArticleTitle")
             title = title_elem.text if title_elem is not None else "No title"
-            
-            # Extract authors
             authors = []
             for author in article.findall(".//Author"):
                 last_name = author.find("LastName")
                 first_name = author.find("ForeName")
                 if last_name is not None and first_name is not None:
                     authors.append(f"{first_name.text} {last_name.text}")
-            
-            # Extract journal and date
             journal_elem = article.find(".//Journal/Title")
             journal = journal_elem.text if journal_elem is not None else "Unknown journal"
-            
             year_elem = article.find(".//PubDate/Year")
             year = year_elem.text if year_elem is not None else "Unknown year"
-            
-            # Extract PMID
             pmid_elem = article.find(".//PMID")
             pmid = pmid_elem.text if pmid_elem is not None else ""
-            
-            # Extract abstract
             abstract_elem = article.find(".//Abstract/AbstractText")
             abstract = abstract_elem.text if abstract_elem is not None else ""
-            
             return {
                 "pmid": pmid,
                 "title": title,
-                "authors": authors[:3],  # First 3 authors
+                "authors": authors[:3],
                 "journal": journal,
                 "year": year,
                 "abstract": abstract[:500] + "..." if len(abstract) > 500 else abstract,
                 "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
-                "relevance_score": 0  # Will be calculated in ranking
+                "relevance_score": 0
             }
-            
         except Exception as e:
             print(f"Error extracting paper info: {e}")
             return None
@@ -157,56 +126,141 @@ class PubMedService:
     def _rank_papers(self, papers: List[Dict], query: str) -> List[Dict]:
         """Simple ranking based on query terms in title/abstract"""
         query_terms = query.lower().split()
-        
         for paper in papers:
             score = 0
             text_to_search = f"{paper['title']} {paper['abstract']}".lower()
-            
             for term in query_terms:
-                # Count occurrences of each query term
                 score += text_to_search.count(term)
-            
             paper['relevance_score'] = score
-        
-        # Sort by relevance score (descending)
         return sorted(papers, key=lambda x: x['relevance_score'], reverse=True)
     
     def generate_search_query(self, patient_data: Dict) -> str:
         """Generate PubMed search query based on patient findings"""
         query_parts = []
-        
-        # Add condition-specific terms
         if patient_data.get('risk_tier') in ['MODERATE', 'HIGH', 'URGENT']:
             query_parts.append("mild cognitive impairment OR alzheimer disease")
-        
-        # Add imaging findings
         if patient_data.get('imaging_findings'):
             query_parts.append("hippocampal atrophy OR medial temporal atrophy")
-        
-        # Add cognitive assessment
         if patient_data.get('moca_score'):
             query_parts.append("montreal cognitive assessment OR MoCA")
-        
-        # Add demographic filters
         query_parts.append("humans[Filter]")
         query_parts.append("english[Filter]")
-        query_parts.append("2020:2024[pdat]")  # Recent papers
-        
+        query_parts.append("2020:2024[pdat]")
         return " AND ".join(query_parts) if query_parts else "alzheimer disease"
 
-# Global PubMed service instance
 pubmed_service = PubMedService()
 
 async def get_literature_for_patient(patient_data: Dict) -> List[Dict]:
     """Main function to get literature for a patient"""
-    # Generate search query
     query = pubmed_service.generate_search_query(patient_data)
-    
-    # Search for papers
     papers = await pubmed_service.search_literature(query, max_results=5)
-    
     return papers
 
+# ================================
+# Clinical Trials Service (added)
+# ================================
+class ClinicalTrialsService:
+    def __init__(self):
+        self.base_url = "https://clinicaltrials.gov/api/v2/studies"
+    
+    async def find_trials(self, patient_data: Dict, max_results: int = 10) -> List[Dict]:
+        """Find clinical trials for a patient"""
+        try:
+            query = self._generate_trial_query(patient_data, max_results)
+            trials_raw = await self._search_trials(query)
+            processed_trials = self._process_trials(trials_raw, patient_data)
+            return processed_trials[:max_results]
+        except Exception as e:
+            print(f"Error searching clinical trials: {e}")
+            return []
+    
+    def _generate_trial_query(self, patient_data: Dict, max_results: int) -> Dict:
+        """Generate ClinicalTrials.gov API query"""
+        conditions = []
+        risk_tier = patient_data.get('risk_tier', 'LOW')
+        if risk_tier in ['MODERATE', 'HIGH', 'URGENT']:
+            conditions.extend([
+                "Mild Cognitive Impairment",
+                "Alzheimer Disease",
+                "Cognitive Decline"
+            ])
+        else:
+            conditions.extend([
+                "Mild Cognitive Impairment", 
+                "Alzheimer Disease",
+                "Memory",
+                "Cognitive Decline"
+            ])
+        query = {
+            "query.cond": "|".join(conditions),
+            "filter.overallStatus": "RECRUITING|NOT_YET_RECRUITING",
+            "sort": "LastUpdatePostDate:desc",
+            "pageSize": max_results,
+            "format": "json"
+        }
+        return query
+    
+    async def _search_trials(self, query: Dict) -> List[Dict]:
+        """Search ClinicalTrials.gov API"""
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(self.base_url, params=query) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return data.get("studies", [])
+                    else:
+                        print(f"ClinicalTrials API error: {response.status}")
+                        return []
+        except Exception as e:
+            print(f"Error fetching trials: {e}")
+            return []
+    
+    def _process_trials(self, trials_raw: List[Dict], patient_data: Dict) -> List[Dict]:
+        """Process and format trial data"""
+        processed = []
+        for trial in trials_raw:
+            try:
+                # Simplified extraction - just get the basics
+                protocol = trial.get("protocolSection", {})
+                identification = protocol.get("identificationModule", {})
+                
+                nct_id = identification.get("nctId", "Unknown")
+                title = identification.get("briefTitle", "Clinical Trial")
+                
+                # Simple summary
+                brief_summary = identification.get("briefSummary", {})
+                if isinstance(brief_summary, dict):
+                    summary = brief_summary.get("textmd", "Cognitive health research trial")
+                else:
+                    summary = "Cognitive health research trial"
+                
+                processed_trial = {
+                    "nct_id": nct_id,
+                    "title": title,
+                    "summary": summary[:200] + "..." if len(summary) > 200 else summary,
+                    "status": "Recruiting",
+                    "locations": ["Multiple locations available"],
+                    "url": f"https://clinicaltrials.gov/study/{nct_id}",
+                    "match_reason": "Alzheimer/Cognitive research trial"
+                }
+                processed.append(processed_trial)
+                
+            except Exception as e:
+                print(f"Error processing trial: {e}")
+                continue
+                
+        return processed
+
+clinical_trials_service = ClinicalTrialsService()
+
+async def get_trials_for_patient(patient_data: Dict) -> List[Dict]:
+    """Main function to get clinical trials for a patient"""
+    trials = await clinical_trials_service.find_trials(patient_data, max_results=5)
+    return trials
+
+# ======================
+# Models / Job registry
+# ======================
 class SubmitResponse(BaseModel):
     job_id: str
 
@@ -222,14 +276,18 @@ class ResultResponse(BaseModel):
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
 
-# New model for literature endpoint
 class LiteratureResponse(BaseModel):
     papers: List[Dict[str, Any]]
     query_used: str
 
+class TrialsResponse(BaseModel):
+    trials: List[Dict[str, Any]]
+
 jobs: Dict[str, Dict[str, Any]] = {}
 
-# Keep your existing EVIDENCE_DB as fallback
+# =======================
+# Static Evidence (fallback)
+# =======================
 EVIDENCE_DB = [
     {
         "title": "NIA-AA Research Framework: Toward a biological definition of Alzheimer's disease",
@@ -263,6 +321,9 @@ EVIDENCE_DB = [
     },
 ]
 
+# =======================
+# Helper functions/agents
+# =======================
 def _init_job(agents: List[str]) -> Dict[str, Any]:
     return {
         "status": "queued",
@@ -357,15 +418,12 @@ def _risk_stratification(features: Dict[str, Any], moca: Dict[str, Any], meta: D
         rationale.append("MoCA below normal threshold")
     return {"risk_tier": risk, "confidence_score": round(confidence, 2), "key_rationale": rationale}
 
-# Updated Evidence RAG Agent to use real PubMed
+# Evidence RAG Agent using PubMed
 async def _evidence_rag_agent(patient_data: Dict[str, Any]) -> Dict[str, Any]:
     """Enhanced Evidence RAG Agent using real PubMed API"""
     try:
-        # Get real literature from PubMed
         papers = await get_literature_for_patient(patient_data)
-        
         if papers:
-            # Convert PubMed papers to your existing format
             citations = []
             for paper in papers:
                 citations.append({
@@ -373,27 +431,23 @@ async def _evidence_rag_agent(patient_data: Dict[str, Any]) -> Dict[str, Any]:
                     "source": f"{paper['journal']} ({paper['year']})",
                     "link": paper["url"],
                     "strength": "high" if paper["relevance_score"] > 2 else "moderate",
-                    "abstract": paper.get("abstract", "")[:200] + "...",
+                    "abstract": (paper.get("abstract", "")[:200] + "...") if paper.get("abstract") else "",
                     "authors": ", ".join(paper["authors"]) if paper["authors"] else "Unknown",
                     "pmid": paper["pmid"]
                 })
-            
             return {
                 "citations": citations,
                 "search_type": "pubmed_live",
                 "total_found": len(papers)
             }
         else:
-            # Fallback to static evidence if PubMed fails
             return {
                 "citations": EVIDENCE_DB[:6],
                 "search_type": "fallback_static",
                 "total_found": len(EVIDENCE_DB)
             }
-            
     except Exception as e:
         print(f"PubMed search failed: {e}")
-        # Fallback to static evidence
         return {
             "citations": EVIDENCE_DB[:6],
             "search_type": "fallback_error",
@@ -417,8 +471,6 @@ def _clinical_note(all_outputs: Dict[str, Any], meta: Dict[str, Any], moca: Dict
         recs.append("Lifestyle risk factor modification counseling")
     else:
         recs.append("Routine monitoring")
-    
-    # Add treatment recommendations based on literature
     if evidence.get("search_type") == "pubmed_live":
         recs.append("See latest research findings for evidence-based interventions")
     
@@ -453,24 +505,31 @@ def _safety_compliance(note: Dict[str, Any], risk: Dict[str, Any]) -> Dict[str, 
         risk["confidence_score"] = 0.9
     return {"safety_approved_note": note, "required_disclaimers": disclaimers, "risk_adjusted": risk}
 
+# ============
+# Endpoints
+# ============
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
 
-# New endpoint for standalone literature search
 @app.post("/api/literature", response_model=LiteratureResponse)
 async def search_literature(patient_data: Dict[str, Any]):
     """Standalone endpoint for literature search"""
     try:
         papers = await get_literature_for_patient(patient_data)
         query = pubmed_service.generate_search_query(patient_data)
-        
-        return {
-            "papers": papers,
-            "query_used": query
-        }
+        return {"papers": papers, "query_used": query}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Literature search failed: {str(e)}")
+
+@app.post("/api/trials", response_model=TrialsResponse)
+async def search_trials(patient_data: Dict[str, Any]):
+    """Standalone endpoint for clinical trials search"""
+    try:
+        trials = await get_trials_for_patient(patient_data)
+        return {"trials": trials}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Trials search failed: {str(e)}")
 
 @app.post("/api/submit", response_model=SubmitResponse)
 async def submit(
@@ -491,6 +550,7 @@ async def submit(
         "Imaging_Feature_Agent",
         "Risk_Stratification_Agent",
         "Evidence_RAG_Agent",
+        "Clinical_Trials_Agent",
         "Clinical_Note_Agent",
         "Safety_Compliance_Agent",
     ]
@@ -518,10 +578,7 @@ async def submit(
             jobs[job_id]["agents"]["Risk_Stratification_Agent"] = {"status": "done", "output": risk}
             jobs[job_id]["progress"] = 45
 
-            # Enhanced Evidence RAG Agent with real PubMed
-            jobs[job_id]["agents"]["Evidence_RAG_Agent"]["status"] = "running"
-            
-            # Prepare patient data for PubMed search
+            # Prepare patient data
             patient_data = {
                 "risk_tier": risk["risk_tier"],
                 "imaging_findings": feats,
@@ -529,15 +586,21 @@ async def submit(
                 "age": int(meta_obj.get("age", 70)),
                 "sex": meta_obj.get("sex", "U")
             }
-            
-            # Use async function in sync context
+
+            # Evidence RAG (PubMed)
+            jobs[job_id]["agents"]["Evidence_RAG_Agent"]["status"] = "running"
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             evidence = loop.run_until_complete(_evidence_rag_agent(patient_data))
-            loop.close()
-            
             jobs[job_id]["agents"]["Evidence_RAG_Agent"] = {"status": "done", "output": evidence}
-            jobs[job_id]["progress"] = 65
+            jobs[job_id]["progress"] = 60
+
+            # Clinical Trials Agent
+            jobs[job_id]["agents"]["Clinical_Trials_Agent"]["status"] = "running"
+            trials = loop.run_until_complete(get_trials_for_patient(patient_data))
+            loop.close()
+            jobs[job_id]["agents"]["Clinical_Trials_Agent"] = {"status": "done", "output": trials}
+            jobs[job_id]["progress"] = 75
 
             # Clinical Note Agent
             jobs[job_id]["agents"]["Clinical_Note_Agent"]["status"] = "running"
@@ -551,7 +614,7 @@ async def submit(
                 moca_obj,
             )
             jobs[job_id]["agents"]["Clinical_Note_Agent"] = {"status": "done", "output": note}
-            jobs[job_id]["progress"] = 80
+            jobs[job_id]["progress"] = 90
 
             # Safety Compliance Agent
             jobs[job_id]["agents"]["Safety_Compliance_Agent"]["status"] = "running"
@@ -564,6 +627,7 @@ async def submit(
                 "triage": safety["risk_adjusted"],
                 "note": safety["safety_approved_note"],
                 "citations": evidence["citations"],
+                "trials": trials,  # <-- added trials to final result
                 "qc": ingest["qc_report"],
                 "search_info": {
                     "search_type": evidence.get("search_type", "unknown"),

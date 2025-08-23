@@ -21,6 +21,7 @@ export interface ResultResponse {
     }
     note: any
     citations: { title: string; source: string; link: string; strength: string }[]
+    trials: any[]
     qc: any
   }
   error?: string
