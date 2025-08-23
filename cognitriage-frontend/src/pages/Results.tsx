@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import { BarChart3, Mail, Pill } from 'lucide-react';
 
 export default function Results() {
   const { analysisResult } = useAppContext();
@@ -39,7 +40,7 @@ export default function Results() {
           <h1 className="text-2xl font-bold text-gray-900">Analysis Results</h1>
         </div>
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">📊</div>
+          <BarChart3 className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h2 className="text-xl font-semibold text-gray-700 mb-2">No Results Available</h2>
           <p className="text-gray-500">Please run an analysis from the Dashboard first to see results.</p>
         </div>
@@ -59,7 +60,10 @@ export default function Results() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Analysis Results</h1>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleShareResults}>📧 Share Results</Button>
+          <Button variant="outline" onClick={handleShareResults}>
+            <Mail className="w-4 h-4 mr-2" />
+            Share Results
+          </Button>
         </div>
       </div>
 
@@ -155,11 +159,11 @@ export default function Results() {
 
           <div className="mt-4 pt-4 border-t">
             <Button 
-              variant="outline" 
               className="w-full"
               onClick={() => navigate('/recommendations')}
             >
-              💊 View Recommendations
+              <Pill className="w-4 h-4 mr-2" />
+              View Recommendations
             </Button>
           </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
 import { useAppContext } from '../context/AppContext';
+import { Brain, AlertTriangle, BarChart3, Upload } from 'lucide-react';
 
 export default function Dashboard() {
   const { patientData, setPatientData, analysisResult, setAnalysisResult } = useAppContext();
@@ -178,10 +179,12 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-900">Cognitive Assessment Dashboard</h1>
         <div className="flex space-x-2">
           <Button onClick={useDemoCase} variant="outline">
-            🧠 Demo - Healthy Case
+            <Brain className="w-4 h-4 mr-2" />
+            Demo - Healthy Case
           </Button>
           <Button onClick={useDemoPathology} variant="outline">
-            ⚠️ Demo - Pathology Case
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            Demo - Pathology Case
           </Button>
         </div>
       </div>
@@ -201,7 +204,7 @@ export default function Dashboard() {
               onDragLeave={onDragLeave}
             >
               <div className="space-y-2">
-                <div className="text-4xl">🧠</div>
+                <Upload className="w-10 h-10 mx-auto text-gray-400" />
                 <div className="text-sm text-gray-600">
                   Drag and drop NIfTI files (.nii, .nii.gz) or DICOM files
                 </div>
@@ -336,13 +339,15 @@ export default function Dashboard() {
                   onClick={() => navigate('/brain')}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
-                  🧠 View Brain Analysis
+                  <Brain className="w-4 h-4 mr-2" />
+                  View Brain Analysis
                 </Button>
                 <Button 
                   onClick={() => navigate('/results')}
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  📊 View Results →
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  View Results
                 </Button>
               </div>
             </div>

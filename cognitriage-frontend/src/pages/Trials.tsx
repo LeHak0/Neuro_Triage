@@ -2,6 +2,19 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useAppContext } from '../context/AppContext';
+import { 
+  Microscope, 
+  BookOpen, 
+  Star, 
+  Mail, 
+  Trash2, 
+  Eye, 
+  FileText, 
+  Building2, 
+  Lightbulb, 
+  CheckCircle, 
+  XCircle 
+} from 'lucide-react';
 
 interface Trial {
   nct_id: string;
@@ -225,7 +238,7 @@ Best regards`);
           <h1 className="text-2xl font-bold text-gray-900">Clinical Trials & Research</h1>
         </div>
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">🔬</div>
+          <Microscope className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h2 className="text-xl font-semibold text-gray-700 mb-2">No Analysis Available</h2>
           <p className="text-gray-500">Please run an analysis from the Dashboard first to see matched clinical trials.</p>
         </div>
@@ -244,11 +257,13 @@ Best regards`);
           </div>
           <span className="text-sm text-green-700">{totalTrials} trials discovered</span>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-blue-600">📚 Live PubMed</span>
+            <BookOpen className="w-4 h-4 text-blue-600" />
+            <span className="text-sm text-blue-600">Live PubMed</span>
             <span className="text-sm text-blue-700">• {totalCitations} research articles</span>
           </div>
           <div className="flex items-center space-x-2 ml-auto">
-            <span className="text-sm text-purple-600">⭐ Saved Trials</span>
+            <Star className="w-4 h-4 text-purple-600" />
+            <span className="text-sm text-purple-600">Saved Trials</span>
             <span className="text-sm text-purple-700">• {savedTrials.size} saved</span>
           </div>
         </div>
@@ -261,7 +276,10 @@ Best regards`);
       {savedTrials.size > 0 && (
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-purple-900">⭐ Your Saved Trials ({savedTrials.size})</h2>
+            <div className="flex items-center space-x-2">
+              <Star className="w-5 h-5 text-purple-600" />
+              <h2 className="text-lg font-semibold text-purple-900">Your Saved Trials ({savedTrials.size})</h2>
+            </div>
             <Button 
               variant="outline" 
               size="sm"
@@ -290,14 +308,14 @@ Best regards`);
                       size="sm"
                       onClick={() => handleContactStudy(trial)}
                     >
-                      📧
+                      <Mail className="w-4 h-4" />
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="sm"
                       onClick={() => handleSaveTrial(trialId)}
                     >
-                      🗑️
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -305,7 +323,8 @@ Best regards`);
             })}
           </div>
           <p className="text-xs text-purple-600 mt-2">
-            💡 Saved trials persist between sessions and can be accessed anytime
+            <Lightbulb className="w-3 h-3 inline mr-1" />
+            Saved trials persist between sessions and can be accessed anytime
           </p>
         </div>
       )}
@@ -336,7 +355,7 @@ Best regards`);
                         <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
                           <span>• {trial.nct_id}</span>
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">{trial.phase}</span>
-                          <span>🏥 {Array.isArray(trial.locations) ? trial.locations[0] : 'Multiple locations'}</span>
+                          <span><Building2 className="w-4 h-4 inline mr-1" /> {Array.isArray(trial.locations) ? trial.locations[0] : 'Multiple locations'}</span>
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -345,14 +364,14 @@ Best regards`);
                           size="sm" 
                           onClick={() => handleSaveTrial(trial.nct_id)}
                         >
-                          {savedTrials.has(trial.nct_id) ? 'Unsave' : '⭐ Save'}
+                          {savedTrials.has(trial.nct_id) ? 'Unsave' : <Star className="w-4 h-4" />}
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => handleContactStudy(trial)}
                         >
-                          📧 Contact
+                          <Mail className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
@@ -363,7 +382,7 @@ Best regards`);
                     {trial.citations && trial.citations.length > 0 && (
                       <div className="bg-blue-50 rounded-lg p-4 mb-4">
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-medium text-blue-900">📚 Latest Research</h4>
+                          <h4 className="text-sm font-medium text-blue-900"><BookOpen className="w-4 h-4 inline mr-1" /> Latest Research</h4>
                           <span className="text-xs text-blue-600">{trial.citations.length} studies</span>
                         </div>
                         <div className="space-y-2">
@@ -377,7 +396,8 @@ Best regards`);
                           ))}
                         </div>
                         <div className="text-xs text-blue-600 mt-2">
-                          💡 These studies provide scientific context for treatment approaches in {trial.title.split(' ')[0]}
+                          <Lightbulb className="w-3 h-3 inline mr-1" />
+                          These studies provide scientific context for treatment approaches in {trial.title.split(' ')[0]}
                         </div>
                       </div>
                     )}
@@ -388,7 +408,7 @@ Best regards`);
                         size="sm"
                         onClick={() => setExpandedTrial(expandedTrial === trial.nct_id ? null : trial.nct_id)}
                       >
-                        👁 View Details & Criteria
+                        <Eye className="w-4 h-4" />
                       </Button>
                       <a
                         href={trial.url}
@@ -396,7 +416,7 @@ Best regards`);
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
-                        📄 View on ClinicalTrials.gov
+                        <FileText className="w-4 h-4 inline mr-1" /> View on ClinicalTrials.gov
                       </a>
                     </div>
                   </div>
@@ -424,7 +444,7 @@ Best regards`);
                         <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
                           <span>• {trial.nct_id}</span>
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">{trial.phase}</span>
-                          <span>🏥 {Array.isArray(trial.locations) ? trial.locations[0] : 'Multiple locations'}</span>
+                          <span><Building2 className="w-4 h-4 inline mr-1" /> {Array.isArray(trial.locations) ? trial.locations[0] : 'Multiple locations'}</span>
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -433,14 +453,14 @@ Best regards`);
                           size="sm" 
                           onClick={() => handleSaveTrial(trial.nct_id)}
                         >
-                          {savedTrials.has(trial.nct_id) ? 'Unsave' : '⭐ Save'}
+                          {savedTrials.has(trial.nct_id) ? 'Unsave' : <Star className="w-4 h-4" />}
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => handleContactStudy(trial)}
                         >
-                          📧 Contact
+                          <Mail className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
@@ -453,7 +473,7 @@ Best regards`);
                         size="sm"
                         onClick={() => setExpandedTrial(expandedTrial === trial.nct_id ? null : trial.nct_id)}
                       >
-                        👁 View Details & Criteria
+                        <Eye className="w-4 h-4" />
                       </Button>
                       <a
                         href={trial.url}
@@ -461,7 +481,7 @@ Best regards`);
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
-                        📄 View on ClinicalTrials.gov
+                        <FileText className="w-4 h-4 inline mr-1" /> View on ClinicalTrials.gov
                       </a>
                     </div>
                   </div>
@@ -497,14 +517,14 @@ Best regards`);
                           size="sm" 
                           onClick={() => handleSaveTrial(trial.nct_id)}
                         >
-                          {savedTrials.has(trial.nct_id) ? 'Unsave' : '⭐ Save'}
+                          {savedTrials.has(trial.nct_id) ? 'Unsave' : <Star className="w-4 h-4" />}
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => handleContactStudy(trial)}
                         >
-                          📧 Contact
+                          <Mail className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
@@ -517,7 +537,7 @@ Best regards`);
                         size="sm"
                         onClick={() => setExpandedTrial(expandedTrial === trial.nct_id ? null : trial.nct_id)}
                       >
-                        👁 View Details & Criteria
+                        <Eye className="w-4 h-4" />
                       </Button>
                       <a
                         href={trial.url}
@@ -525,7 +545,7 @@ Best regards`);
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
-                        📄 View on ClinicalTrials.gov
+                        <FileText className="w-4 h-4 inline mr-1" /> View on ClinicalTrials.gov
                       </a>
                     </div>
                   </div>
@@ -536,7 +556,7 @@ Best regards`);
 
           {trials.length === 0 && (
             <div className="border border-zinc-200 rounded-lg p-8 text-center">
-              <div className="text-4xl mb-4">🔬</div>
+              <div className="text-4xl mb-4"><Microscope className="w-16 h-16" /></div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Matching Trials Found</h3>
               <p className="text-sm text-gray-600 mb-4">
                 No clinical trials match the current patient profile. Try running a new analysis or check back later for updated trials.
@@ -558,7 +578,7 @@ Best regards`);
               : 'bg-red-100 text-red-800 border border-red-200'
           }`}>
             <div className="flex items-center space-x-2">
-              <span>{showToast.type === 'success' ? '✅' : '❌'}</span>
+              <span>{showToast.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}</span>
               <span className="text-sm font-medium">{showToast.message}</span>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { Brain, BarChart3, Microscope, Pill, Home } from 'lucide-react';
 
 interface SidebarProps {
   className?: string;
@@ -8,34 +9,51 @@ const navigationItems = [
   {
     name: 'Main',
     href: '/',
-    icon: '🏠',
+    icon: 'home',
     description: 'Upload & Analysis'
   },
   {
     name: 'Brain',
     href: '/brain',
-    icon: '🧠',
+    icon: 'brain',
     description: 'Brain Visualization'
   },
   {
     name: 'Results',
     href: '/results',
-    icon: '📊',
+    icon: 'chart',
     description: 'Analysis Results'
   },
   {
     name: 'Trials & Research',
     href: '/trials',
-    icon: '🔬',
+    icon: 'microscope',
     description: 'Clinical Trials & PubMed'
   },
   {
     name: 'Recommendations',
     href: '/recommendations',
-    icon: '💊',
+    icon: 'pill',
     description: 'Treatment Plans'
   }
 ];
+
+const getIcon = (iconType: string) => {
+  switch (iconType) {
+    case 'brain':
+      return <Brain className="w-5 h-5" />;
+    case 'chart':
+      return <BarChart3 className="w-5 h-5" />;
+    case 'microscope':
+      return <Microscope className="w-5 h-5" />;
+    case 'pill':
+      return <Pill className="w-5 h-5" />;
+    case 'home':
+      return <Home className="w-5 h-5" />;
+    default:
+      return <Brain className="w-5 h-5" />;
+  }
+};
 
 export default function Sidebar({ className = '' }: SidebarProps) {
   const location = useLocation();
@@ -45,7 +63,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
       {/* Logo/Header */}
       <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
-          <div className="text-2xl">🧠</div>
+          <Brain className="w-8 h-8 text-blue-600" />
           <div>
             <h1 className="text-lg font-bold text-gray-900">CogniTriage</h1>
             <p className="text-xs text-gray-500">AI-Powered Screening</p>
@@ -69,7 +87,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
               }`}
             >
               <span className="text-lg mr-3" aria-hidden="true">
-                {item.icon}
+                {getIcon(item.icon)}
               </span>
               <div className="flex-1">
                 <div className="font-medium">{item.name}</div>

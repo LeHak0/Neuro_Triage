@@ -1,11 +1,88 @@
 import { Button } from "@/components/ui/button";
 import { useAppContext } from '../context/AppContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Microscope, FileText, Mail } from 'lucide-react';
+
+interface Trial {
+  nct_id: string;
+  title: string;
+  summary: string;
+  status: string;
+  locations: string[];
+  url: string;
+  match_reason: string;
+  match_score: 'high' | 'medium' | 'low';
+  phase: string;
+  citations?: any[];
+}
 
 export default function Recommendations() {
   const { analysisResult, patientData } = useAppContext();
   const { treatment_recommendations, result } = analysisResult;
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [highMatchTrials, setHighMatchTrials] = useState<Trial[]>([]);
+  const [trialsLoading, setTrialsLoading] = useState(false);
+
+  // Fetch high match trials for recommendations
+  useEffect(() => {
+    if (result && patientData.age && patientData.moca) {
+      fetchHighMatchTrials();
+    }
+  }, [result, patientData]);
+
+  const fetchHighMatchTrials = async () => {
+    setTrialsLoading(true);
+    try {
+      const riskTier = result?.triage?.risk_tier || 'MODERATE';
+      const imagingFindings = result?.note?.imaging_findings || {};
+      
+      const requestData = {
+        risk_tier: riskTier,
+        imaging_findings: imagingFindings,
+        moca_score: patientData.moca || 24,
+        age: patientData.age || 72,
+        sex: patientData.sex || 'M'
+      };
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/trials`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const trials = data.trials || [];
+        // Filter only high match trials for recommendations
+        const highMatch = trials.filter((trial: Trial) => trial.match_score === 'high');
+        setHighMatchTrials(highMatch);
+      } else {
+        // Fallback to demo high match trials
+        setHighMatchTrials(getDemoHighMatchTrials());
+      }
+    } catch (error) {
+      console.error('Error fetching trials for recommendations:', error);
+      setHighMatchTrials(getDemoHighMatchTrials());
+    } finally {
+      setTrialsLoading(false);
+    }
+  };
+
+  const getDemoHighMatchTrials = (): Trial[] => [
+    {
+      nct_id: "NCT05123456",
+      title: "Cognitive Training for Mild Cognitive Impairment",
+      summary: "A randomized controlled trial investigating the effects of computerized cognitive training on memory and executive function in adults with mild cognitive impairment.",
+      status: "Recruiting",
+      locations: ["Stanford University", "UCSF Medical Center"],
+      url: "https://clinicaltrials.gov/study/NCT05123456",
+      match_reason: "Strong match: Patient risk tier and cognitive profile align well with trial criteria for cognitive intervention studies.",
+      match_score: "high" as const,
+      phase: "PHASE2"
+    }
+  ];
 
   const handleGenerateReport = () => {
     setIsGeneratingReport(true);
@@ -95,7 +172,7 @@ Generated on ${currentDate}`;
           <h1 className="text-2xl font-bold text-gray-900">Treatment Recommendations</h1>
         </div>
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">🔬</div>
+          <Microscope className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h2 className="text-xl font-semibold text-gray-700 mb-2">No Analysis Available</h2>
           <p className="text-gray-500">Please run an analysis from the Dashboard first to see treatment recommendations.</p>
         </div>
@@ -115,9 +192,13 @@ Generated on ${currentDate}`;
             onClick={handleGenerateReport}
             disabled={isGeneratingReport}
           >
-            📄 {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+            <FileText className="w-4 h-4 mr-2" />
+            {isGeneratingReport ? 'Generating...' : 'Generate Report'}
           </Button>
-          <Button onClick={handleShareWithProvider}>📧 Share with Provider</Button>
+          <Button onClick={handleShareWithProvider}>
+            <Mail className="w-4 h-4 mr-2" />
+            Share with Provider
+          </Button>
         </div>
       </div>
 
@@ -234,22 +315,27 @@ Generated on ${currentDate}`;
       )}
 
       {/* Clinical Trials */}
-      {treatment_recommendations.clinical_trials?.length > 0 && (
+      {highMatchTrials.length > 0 && (
         <div className="border border-zinc-200 rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4">Clinical Trial Opportunities</h2>
-          <div className="space-y-3">
-            {treatment_recommendations.clinical_trials.map((trial: any, i: number) => (
-              <div key={i} className="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg">
-                <div className="w-2 h-2 bg-purple-600 rounded-full mt-2 flex-shrink-0"></div>
-                <div className="flex-1">
-                  <span className="text-sm text-gray-700 block">{trial.consideration}</span>
-                  {trial.rationale && (
-                    <span className="text-xs text-gray-500">{trial.rationale}</span>
-                  )}
+          {trialsLoading ? (
+            <div className="text-sm text-gray-500 text-center py-4">Loading...</div>
+          ) : (
+            <div className="space-y-3">
+              {highMatchTrials.map((trial: Trial, i: number) => (
+                <div key={i} className="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg">
+                  <div className="w-2 h-2 bg-purple-600 rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <span className="text-sm text-gray-700 block">{trial.title}</span>
+                    <span className="text-xs text-gray-500">{trial.summary}</span>
+                    <span className="text-xs text-blue-600 block">Status: {trial.status}</span>
+                    <span className="text-xs text-blue-600 block">Locations: {trial.locations.join(', ')}</span>
+                    <span className="text-xs text-blue-600 block">Match Reason: {trial.match_reason}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
