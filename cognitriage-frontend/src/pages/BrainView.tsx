@@ -1,4 +1,3 @@
-// React import removed - not needed for this component
 import BrainVisualization from '../components/BrainVisualization';
 import { useAppContext } from '../context/AppContext';
 
@@ -6,10 +5,8 @@ export default function BrainView() {
   const { analysisResult } = useAppContext();
   const { result } = analysisResult;
   
-  // Get brain data from context or use empty fallback
   const imagingFindings = result?.note?.imaging_findings || {};
   
-  // Backend always returns slice data in 'thumbnails' for both demo and uploaded files
   const sliceData = imagingFindings.thumbnails || {};
   
   console.log('BrainView - Full result object:', result);
@@ -20,7 +17,6 @@ export default function BrainView() {
   console.log('BrainView - final sliceData:', sliceData);
   console.log('BrainView - sliceData keys:', Object.keys(sliceData || {}));
   
-  // Check if slices are nested deeper
   if (imagingFindings.slices) {
     console.log('BrainView - slices structure:', typeof imagingFindings.slices, imagingFindings.slices);
   }

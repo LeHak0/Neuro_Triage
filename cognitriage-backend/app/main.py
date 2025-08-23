@@ -29,13 +29,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# =========================
-# PubMed Service (existing)
-# =========================
+
 class PubMedService:
     def __init__(self):
-        # Set your email for NCBI (required)
-        Entrez.email = "loubaba@stanford.edu"  # Replace with your email
+        Entrez.email = "loubaba@stanford.edu" 
         self.base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
     
     async def search_literature(self, query: str, max_results: int = 5) -> List[Dict]:
@@ -164,9 +161,6 @@ async def get_literature_for_patient(patient_data: Dict) -> List[Dict]:
     papers = await pubmed_service.search_literature(query, max_results=5)
     return papers
 
-# ================================
-# Clinical Trials Service (added)
-# ================================
 class ClinicalTrialsService:
     def __init__(self):
         self.base_url = "https://clinicaltrials.gov/api/v2/studies"
@@ -228,7 +222,6 @@ class ClinicalTrialsService:
         processed = []
         for i, trial in enumerate(trials_raw):
             try:
-                # Simplified extraction - just get the basics
                 protocol = trial.get("protocolSection", {})
                 identification = protocol.get("identificationModule", {})
                 design = protocol.get("designModule", {})
@@ -237,22 +230,16 @@ class ClinicalTrialsService:
                 nct_id = identification.get("nctId", "Unknown")
                 title = identification.get("briefTitle", "Clinical Trial")
                 
-                # Get phase information
                 phases = design.get("phases", [])
                 phase = phases[0] if phases else "PHASE1"
                 
-                # Simple summary
                 brief_summary = identification.get("briefSummary", {})
                 if isinstance(brief_summary, dict):
                     summary = brief_summary.get("textmd", "Cognitive health research trial")
                 else:
                     summary = "Cognitive health research trial"
-                
-                # Calculate match score based on patient data
                 match_score = self._calculate_match_score(trial, patient_data, i)
                 match_reason = self._generate_match_reason(trial, patient_data, match_score)
-                
-                # Generate sample citations for each trial
                 citations = self._generate_sample_citations(title, nct_id)
                 
                 processed_trial = {
@@ -281,7 +268,6 @@ class ClinicalTrialsService:
         age = patient_data.get('age', 70)
         moca_score = patient_data.get('moca_score', 24)
         
-        # Simple scoring logic based on index and patient data
         if index == 0 and risk_tier in ['HIGH', 'URGENT']:
             return 'high'
         elif index <= 1 and (risk_tier == 'MODERATE' or moca_score < 26):
@@ -306,7 +292,6 @@ class ClinicalTrialsService:
     
     def _generate_sample_citations(self, title: str, nct_id: str) -> List[Dict]:
         """Generate sample PubMed citations for trials"""
-        # Extract key terms from title for relevant citations
         key_terms = ["Alzheimer", "cognitive", "memory", "dementia", "MCI"]
         
         citations = [
@@ -335,9 +320,7 @@ async def get_trials_for_patient(patient_data: Dict) -> List[Dict]:
     trials = await clinical_trials_service.find_trials(patient_data, max_results=5)
     return trials
 
-# ======================
-# Models / Job registry
-# ======================
+
 class SubmitResponse(BaseModel):
     job_id: str
 
@@ -362,9 +345,7 @@ class TrialsResponse(BaseModel):
 
 jobs: Dict[str, Dict[str, Any]] = {}
 
-# =======================
-# Static Evidence (fallback)
-# =======================
+
 EVIDENCE_DB = [
     {
         "title": "NIA-AA Research Framework: Toward a biological definition of Alzheimer's disease",
@@ -398,9 +379,6 @@ EVIDENCE_DB = [
     },
 ]
 
-# =======================
-# Helper functions/agents
-# =======================
 def _init_job(agents: List[str]) -> Dict[str, Any]:
     return {
         "status": "queued",
@@ -439,20 +417,17 @@ def _ingestion_qc(files: List[UploadFile], moca: Dict[str, Any], meta: Dict[str,
 def _imaging_features(files: List[UploadFile], meta: Dict[str, Any]) -> Dict[str, Any]:
     """Process uploaded neuroimaging files using real NIFTI processing"""
     try:
-        # Check if we have NIFTI files
+
         nifti_files = [f for f in files if f.filename.lower().endswith(('.nii', '.nii.gz'))]
         
         if not nifti_files:
-            # Fallback to simulated processing if no NIFTI files
+
             return _simulated_imaging_features(files, meta)
         
-        # Process the first NIFTI file
         nifti_file = nifti_files[0]
         
-        # Save uploaded file temporarily
         file_extension = '.nii.gz' if nifti_file.filename.lower().endswith('.nii.gz') else '.nii'
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp_file:
-            # Reset file pointer to beginning
             nifti_file.file.seek(0)
             content = nifti_file.file.read()
             tmp_file.write(content)
@@ -461,13 +436,9 @@ def _imaging_features(files: List[UploadFile], meta: Dict[str, Any]) -> Dict[str
             print(f"Original filename: {nifti_file.filename}, detected extension: {file_extension}")
         
         try:
-            # Process with real neuroimaging
             results = process_uploaded_nifti(tmp_file_path, meta)
-            # Unwrap success/results format if present
             if isinstance(results, dict) and "results" in results:
                 results = results["results"]
-            
-            # Format results to match expected structure
             return {
                 "hippocampal_volumes": results["hippocampal_volumes"],
                 "mta_score": results["mta_score"],
@@ -486,16 +457,13 @@ def _imaging_features(files: List[UploadFile], meta: Dict[str, Any]) -> Dict[str
             print("Full traceback:")
             traceback.print_exc()
             print(f"File info - name: {nifti_file.filename}, size: {len(content) if 'content' in locals() else 'unknown'}")
-            # Fallback to simulated processing
             return _simulated_imaging_features(files, meta)
             
         finally:
-            # Clean up temporary file
             os.unlink(tmp_file_path)
             
     except Exception as e:
         print(f"Error processing NIFTI file: {e}")
-        # Fallback to simulated processing
         return _simulated_imaging_features(files, meta)
 
 def _simulated_imaging_features(files: List[UploadFile], meta: Dict[str, Any]) -> Dict[str, Any]:
@@ -564,7 +532,6 @@ def _risk_stratification(features: Dict[str, Any], moca: Dict[str, Any], meta: D
         rationale.append("MoCA below normal threshold")
     return {"risk_tier": risk, "confidence_score": round(confidence, 2), "key_rationale": rationale}
 
-# Evidence RAG Agent using PubMed
 async def _evidence_rag_agent(patient_data: Dict[str, Any]) -> Dict[str, Any]:
     """Enhanced Evidence RAG Agent using real PubMed API"""
     try:
@@ -647,12 +614,10 @@ def _clinical_note_agent(features: Dict[str, Any], risk: Dict[str, Any], evidenc
     sex = meta.get("sex", "U")
     moca_score = int(moca.get("total", 24))
     
-    # Extract key imaging findings
     hippocampal_vols = features.get("hippocampal_volumes", {})
     brain_vols = features.get("brain_volumes", {})
     mta_score = features.get("mta_score", 0)
     
-    # Generate clinical note
     note = {
         "patient_summary": {
             "age": age,
@@ -660,7 +625,6 @@ def _clinical_note_agent(features: Dict[str, Any], risk: Dict[str, Any], evidenc
             "moca_score": moca_score,
             "risk_tier": risk.get("risk_tier", "UNKNOWN")
         },
-        # Add patient_info to match frontend (legacy consumers)
         "patient_info": {
             "age": age,
             "sex": sex,
@@ -679,7 +643,6 @@ def _clinical_note_agent(features: Dict[str, Any], risk: Dict[str, Any], evidenc
             "risk_assessment": f"Risk tier: {risk.get('risk_tier', 'UNKNOWN')} (confidence: {risk.get('confidence_score', 0):.0%})",
             "recommendations": ["Clinical correlation recommended", "Consider follow-up imaging in 12 months"]
         },
-        # Top-level recommendations/limitations for UI cards
         "recommendations": ["Clinical correlation recommended", "Consider follow-up imaging in 12 months"],
         "limitations": [
             "MRI-derived measures are approximations; clinical correlation required",
@@ -709,7 +672,6 @@ def _safety_compliance_agent(note: Dict[str, Any], risk: Dict[str, Any]) -> Dict
 
     compliance_score = 0.95 if risk.get("risk_tier") in ["LOW", "MODERATE"] else 0.85
 
-    # Construct standardized outputs expected by frontend
     risk_adjusted = {
         **risk,
         "compliance_score": compliance_score,
@@ -727,7 +689,6 @@ def _safety_compliance_agent(note: Dict[str, Any], risk: Dict[str, Any]) -> Dict
         "disclaimers": disclaimers,
         "regulatory_notes": ["FDA cleared for research use", "HIPAA compliant processing"],
         "audit_trail": f"Processed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-        # Added fields used downstream for standardized result shape
         "risk_adjusted": risk_adjusted,
         "safety_approved_note": safety_approved_note,
     }
@@ -736,9 +697,6 @@ def _safety_compliance(note: Dict[str, Any], risk: Dict[str, Any]) -> Dict[str, 
     """Legacy function - calls new agent"""
     return _safety_compliance_agent(note, risk)
 
-# ============
-# Endpoints
-# ============
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
@@ -748,8 +706,7 @@ async def get_demo_nifti():
     """Serve demo NIFTI file for testing"""
     import os
     from fastapi.responses import FileResponse
-    
-    # Path to demo NIFTI file - use relative path
+
     full_path = os.path.join(os.path.dirname(__file__), "..", "..", "nii files", "niivue-images", "chris_t1.nii.gz")
     
     if os.path.exists(full_path):
@@ -770,22 +727,18 @@ async def test_nifti_processing(
     try:
         meta_obj = json.loads(meta)
         
-        # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix='.nii.gz') as tmp_file:
             content = await file.read()
             tmp_file.write(content)
             tmp_file_path = tmp_file.name
         
         try:
-            # Process with real neuroimaging
             results = process_uploaded_nifti(tmp_file_path, meta_obj)
-            # Unwrap success/results format if present
             if isinstance(results, dict) and "results" in results:
                 results = results["results"]
             return {"success": True, "results": results}
             
         finally:
-            # Clean up temporary file
             os.unlink(tmp_file_path)
             
     except Exception as e:
@@ -814,13 +767,11 @@ async def search_trials(patient_data: Dict[str, Any]):
 async def demo_submit(background_tasks: BackgroundTasks):
     """Demo submission using a real NIFTI file from the project"""
     try:
-        # Use the chris_t1.nii.gz file from the project
         demo_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "nii files", "niivue-images", "chris_t1.nii.gz")
         
         if not os.path.exists(demo_file_path):
             raise HTTPException(status_code=404, detail="Demo NIFTI file not found")
         
-        # Create a mock UploadFile
         with open(demo_file_path, 'rb') as f:
             file_content = f.read()
         
@@ -833,7 +784,6 @@ async def demo_submit(background_tasks: BackgroundTasks):
         demo_moca = {"total": "24"}  # MoCA score indicating mild cognitive impairment
         demo_meta = {"age": "72", "sex": "M"}
         
-        # Create job and run pipeline
         job_id = str(uuid.uuid4())
         jobs[job_id] = {"status": "processing", "progress": 0, "current_agent": "starting", "agents": {}}
         
@@ -842,7 +792,6 @@ async def demo_submit(background_tasks: BackgroundTasks):
             try:
                 jobs[job_id]["status"] = "running"
                 
-                # Ingestion QC Agent
                 jobs[job_id]["agents"] = {
                     "Ingestion_QC_Agent": {"status": "running"},
                     "Imaging_Feature_Agent": {"status": "pending"},
@@ -858,23 +807,18 @@ async def demo_submit(background_tasks: BackgroundTasks):
                 jobs[job_id]["agents"]["Ingestion_QC_Agent"] = {"status": "done", "output": ingest}
                 jobs[job_id]["progress"] = 15
 
-                # Imaging Feature Agent - Process real NIFTI
                 jobs[job_id]["agents"]["Imaging_Feature_Agent"]["status"] = "running"
                 try:
-                    # Process the NIFTI file directly using neuroimaging module
-                    # Save demo file temporarily
                     demo_file = demo_files[0]
                     with tempfile.NamedTemporaryFile(delete=False, suffix='.nii.gz') as tmp_file:
                         demo_file.file.seek(0)
                         tmp_file.write(demo_file.file.read())
                         tmp_file_path = tmp_file.name
                     
-                    # Process with real neuroimaging
                     feats = process_uploaded_nifti(tmp_file_path, demo_meta)
                     if isinstance(feats, dict) and "results" in feats:
                         feats = feats["results"]
                     
-                    # Clean up
                     os.unlink(tmp_file_path)
                     
                 except Exception as e:
@@ -884,19 +828,16 @@ async def demo_submit(background_tasks: BackgroundTasks):
                     print("Full traceback:")
                     traceback.print_exc()
                     print(f"File info - name: {demo_file.filename}, size: {len(file_content)}")
-                    # Fallback to simulated features
                     feats = _simulated_imaging_features(demo_files, demo_meta)
                 
                 jobs[job_id]["agents"]["Imaging_Feature_Agent"] = {"status": "done", "output": feats}
                 jobs[job_id]["progress"] = 30
 
-                # Risk Stratification Agent
                 jobs[job_id]["agents"]["Risk_Stratification_Agent"]["status"] = "running"
                 risk = _risk_stratification(feats, demo_moca, demo_meta)
                 jobs[job_id]["agents"]["Risk_Stratification_Agent"] = {"status": "done", "output": risk}
                 jobs[job_id]["progress"] = 45
 
-                # Prepare patient data
                 patient_data = {
                     "risk_tier": risk["risk_tier"],
                     "imaging_findings": feats,
@@ -905,7 +846,6 @@ async def demo_submit(background_tasks: BackgroundTasks):
                     "sex": demo_meta.get("sex", "U")
                 }
 
-                # Evidence RAG (PubMed)
                 jobs[job_id]["agents"]["Evidence_RAG_Agent"]["status"] = "running"
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
@@ -913,14 +853,12 @@ async def demo_submit(background_tasks: BackgroundTasks):
                 jobs[job_id]["agents"]["Evidence_RAG_Agent"] = {"status": "done", "output": evidence}
                 jobs[job_id]["progress"] = 60
 
-                # Clinical Trials Agent
                 jobs[job_id]["agents"]["Clinical_Trials_Agent"]["status"] = "running"
                 trials = loop.run_until_complete(get_trials_for_patient(patient_data))
                 loop.close()
                 jobs[job_id]["agents"]["Clinical_Trials_Agent"] = {"status": "done", "output": trials}
                 jobs[job_id]["progress"] = 70
 
-                # Treatment Recommendation Agent
                 jobs[job_id]["agents"]["Treatment_Recommendation_Agent"]["status"] = "running"
                 treatment_recs = treatment_recommendation_agent(
                     risk_tier=risk["risk_tier"],
@@ -935,19 +873,15 @@ async def demo_submit(background_tasks: BackgroundTasks):
                 jobs[job_id]["agents"]["Treatment_Recommendation_Agent"] = {"status": "done", "output": treatment_recs}
                 jobs[job_id]["progress"] = 80
 
-                # Clinical Note Agent
                 jobs[job_id]["agents"]["Clinical_Note_Agent"]["status"] = "running"
                 note = _clinical_note_agent(feats, risk, evidence, trials, demo_moca, demo_meta)
                 jobs[job_id]["agents"]["Clinical_Note_Agent"] = {"status": "done", "output": note}
                 jobs[job_id]["progress"] = 90
-
-                # Safety Compliance Agent
                 jobs[job_id]["agents"]["Safety_Compliance_Agent"]["status"] = "running"
                 safety = _safety_compliance_agent(note, risk)
                 jobs[job_id]["agents"]["Safety_Compliance_Agent"] = {"status": "done", "output": safety}
                 jobs[job_id]["progress"] = 100
 
-                # Final result (standardized shape expected by frontend)
                 jobs[job_id]["result"] = {
                     "triage": safety["risk_adjusted"],
                     "note": safety["safety_approved_note"],
@@ -980,7 +914,6 @@ async def demo_submit(background_tasks: BackgroundTasks):
 async def demo_pathology(background_tasks: BackgroundTasks):
     """Demo submission using real T2-weighted brain MRI data"""
     try:
-        # Use chris_t2.nii.gz as it may show different pathology patterns than T1
         demo_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "nii files", "niivue-images", "chris_t2.nii.gz")
         
         print(f"Looking for demo file at: {demo_file_path}")
@@ -989,7 +922,6 @@ async def demo_pathology(background_tasks: BackgroundTasks):
         if not os.path.exists(demo_file_path):
             raise HTTPException(status_code=404, detail=f"Demo pathology NIFTI file not found at {demo_file_path}")
         
-        # Create a mock UploadFile
         with open(demo_file_path, 'rb') as f:
             file_content = f.read()
         
@@ -1001,10 +933,9 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                 self.file = io.BytesIO(content)
         
         demo_files = [MockUploadFile("chris_t2.nii.gz", file_content)]
-        demo_moca = {"total": "19"}  # Lower MoCA score indicating cognitive impairment
-        demo_meta = {"age": "78", "sex": "F", "pathology_demo": False}  # Use real brain data, no artificial simulation
+        demo_moca = {"total": "19"}  # Lower MoCA score - cognitive impairment
+        demo_meta = {"age": "78", "sex": "F", "pathology_demo": False}  
         
-        # Create job and run pipeline
         job_id = str(uuid.uuid4())
         jobs[job_id] = {"status": "processing", "progress": 0, "current_agent": "starting", "agents": {}}
         
@@ -1014,7 +945,6 @@ async def demo_pathology(background_tasks: BackgroundTasks):
             try:
                 jobs[job_id]["status"] = "running"
                 
-                # Ingestion QC Agent
                 jobs[job_id]["agents"] = {
                     "Ingestion_QC_Agent": {"status": "running"},
                     "Imaging_Feature_Agent": {"status": "pending"},
@@ -1030,17 +960,12 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                 jobs[job_id]["agents"]["Ingestion_QC_Agent"] = {"status": "done", "output": ingest}
                 jobs[job_id]["progress"] = 15
 
-                # Imaging Feature Agent - Force real NIFTI processing for pathology demo
                 jobs[job_id]["agents"]["Imaging_Feature_Agent"]["status"] = "running"
                 try:
-                    # Process the NIFTI file directly using neuroimaging module
-                    # using process_uploaded_nifti imported at module level
                     
-                    # Save demo file temporarily
                     demo_file = demo_files[0]
                     file_extension = '.nii.gz' if demo_file.filename.lower().endswith('.nii.gz') else '.nii'
                     with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp_file:
-                        # Reset file pointer to beginning
                         demo_file.file.seek(0)
                         content = demo_file.file.read()
                         tmp_file.write(content)
@@ -1048,22 +973,18 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                         print(f"Saved uploaded file to: {tmp_file_path} (size: {len(content)} bytes)")
                         print(f"Original filename: {demo_file.filename}, detected extension: {file_extension}")
                     
-                    # Process with real neuroimaging
                     feats = process_uploaded_nifti(tmp_file_path, demo_meta)
                     if isinstance(feats, dict) and "results" in feats:
                         feats = feats["results"]
                     
-                    # Apply pathology simulation to the real results
                     if demo_meta.get("pathology_demo"):
-                        # Reduce hippocampal volumes for pathology simulation
-                        feats["hippocampal_volumes"]["left_ml"] *= 0.035  # Severe 96.5% reduction
-                        feats["hippocampal_volumes"]["right_ml"] *= 0.04   # Severe 96% reduction
+                        feats["hippocampal_volumes"]["left_ml"] *= 0.035  
+                        feats["hippocampal_volumes"]["right_ml"] *= 0.04   
                         feats["hippocampal_volumes"]["total_ml"] = feats["hippocampal_volumes"]["left_ml"] + feats["hippocampal_volumes"]["right_ml"]
                         feats["hippocampal_volumes"]["asymmetry_ml"] = abs(
                             feats["hippocampal_volumes"]["left_ml"] - feats["hippocampal_volumes"]["right_ml"]
                         )
                         
-                        # Recalculate percentiles for severely reduced volumes
                         age = int(demo_meta.get("age", 70))
                         expected_left = 4.2 - (age - 60) * 0.02
                         expected_right = 4.3 - (age - 60) * 0.02
@@ -1071,10 +992,8 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                         feats["percentiles"]["right_pct"] = max(1, min(99, int(100 * feats["hippocampal_volumes"]["right_ml"] / expected_right)))
                         feats["percentiles"]["mean_pct"] = (feats["percentiles"]["left_pct"] + feats["percentiles"]["right_pct"]) // 2
                         
-                        # Update MTA score for severe atrophy
-                        feats["mta_score"] = 4  # Severe atrophy
-                    
-                    # Clean up
+                        feats["mta_score"] = 4 
+ 
                     os.unlink(tmp_file_path)
                     
                 except Exception as e:
@@ -1084,19 +1003,16 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                     print("Full traceback:")
                     traceback.print_exc()
                     print(f"File info - name: {demo_file.filename}, size: {len(content)}")
-                    # Fallback to simulated features
                     feats = _simulated_imaging_features(demo_files, demo_meta)
                 
                 jobs[job_id]["agents"]["Imaging_Feature_Agent"] = {"status": "done", "output": feats}
                 jobs[job_id]["progress"] = 30
 
-                # Risk Stratification Agent
                 jobs[job_id]["agents"]["Risk_Stratification_Agent"]["status"] = "running"
                 risk = _risk_stratification(feats, demo_moca, demo_meta)
                 jobs[job_id]["agents"]["Risk_Stratification_Agent"] = {"status": "done", "output": risk}
                 jobs[job_id]["progress"] = 45
 
-                # Prepare patient data
                 patient_data = {
                     "risk_tier": risk["risk_tier"],
                     "imaging_findings": feats,
@@ -1105,7 +1021,6 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                     "sex": demo_meta.get("sex", "U")
                 }
 
-                # Evidence RAG (PubMed)
                 jobs[job_id]["agents"]["Evidence_RAG_Agent"]["status"] = "running"
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
@@ -1113,14 +1028,12 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                 jobs[job_id]["agents"]["Evidence_RAG_Agent"] = {"status": "done", "output": evidence}
                 jobs[job_id]["progress"] = 60
 
-                # Clinical Trials Agent
                 jobs[job_id]["agents"]["Clinical_Trials_Agent"]["status"] = "running"
                 trials = loop.run_until_complete(get_trials_for_patient(patient_data))
                 loop.close()
                 jobs[job_id]["agents"]["Clinical_Trials_Agent"] = {"status": "done", "output": trials}
                 jobs[job_id]["progress"] = 70
 
-                # Treatment Recommendation Agent
                 jobs[job_id]["agents"]["Treatment_Recommendation_Agent"]["status"] = "running"
                 treatment_recs = treatment_recommendation_agent(
                     risk_tier=risk["risk_tier"],
@@ -1135,7 +1048,6 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                 jobs[job_id]["agents"]["Treatment_Recommendation_Agent"] = {"status": "done", "output": treatment_recs}
                 jobs[job_id]["progress"] = 80
 
-                # Clinical Note Agent
                 jobs[job_id]["agents"]["Clinical_Note_Agent"]["status"] = "running"
                 note = _clinical_note(
                     {
@@ -1149,7 +1061,6 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                 jobs[job_id]["agents"]["Clinical_Note_Agent"] = {"status": "done", "output": note}
                 jobs[job_id]["progress"] = 90
 
-                # Safety Compliance Agent
                 jobs[job_id]["agents"]["Safety_Compliance_Agent"]["status"] = "running"
                 safety = _safety_compliance_agent(note, risk)
                 jobs[job_id]["agents"]["Safety_Compliance_Agent"] = {"status": "done", "output": safety}
@@ -1215,25 +1126,21 @@ async def submit(
         try:
             jobs[job_id]["status"] = "running"
             
-            # Ingestion QC Agent
             jobs[job_id]["agents"]["Ingestion_QC_Agent"]["status"] = "running"
             ingest = _ingestion_qc(files, moca_obj, meta_obj)
             jobs[job_id]["agents"]["Ingestion_QC_Agent"] = {"status": "done", "output": ingest}
             jobs[job_id]["progress"] = 15
 
-            # Imaging Feature Agent
             jobs[job_id]["agents"]["Imaging_Feature_Agent"]["status"] = "running"
             feats = _imaging_features(files, meta_obj)
             jobs[job_id]["agents"]["Imaging_Feature_Agent"] = {"status": "done", "output": feats}
             jobs[job_id]["progress"] = 30
 
-            # Risk Stratification Agent
             jobs[job_id]["agents"]["Risk_Stratification_Agent"]["status"] = "running"
             risk = _risk_stratification(feats, moca_obj, meta_obj)
             jobs[job_id]["agents"]["Risk_Stratification_Agent"] = {"status": "done", "output": risk}
             jobs[job_id]["progress"] = 45
 
-            # Prepare patient data
             patient_data = {
                 "risk_tier": risk["risk_tier"],
                 "imaging_findings": feats,
@@ -1242,7 +1149,6 @@ async def submit(
                 "sex": meta_obj.get("sex", "U")
             }
 
-            # Evidence RAG (PubMed)
             jobs[job_id]["agents"]["Evidence_RAG_Agent"]["status"] = "running"
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -1250,14 +1156,12 @@ async def submit(
             jobs[job_id]["agents"]["Evidence_RAG_Agent"] = {"status": "done", "output": evidence}
             jobs[job_id]["progress"] = 60
 
-            # Clinical Trials Agent
             jobs[job_id]["agents"]["Clinical_Trials_Agent"]["status"] = "running"
             trials = loop.run_until_complete(get_trials_for_patient(patient_data))
             loop.close()
             jobs[job_id]["agents"]["Clinical_Trials_Agent"] = {"status": "done", "output": trials}
             jobs[job_id]["progress"] = 70
 
-            # Treatment Recommendation Agent
             jobs[job_id]["agents"]["Treatment_Recommendation_Agent"]["status"] = "running"
             treatment_recs = treatment_recommendation_agent(
                 risk_tier=risk["risk_tier"],
@@ -1272,7 +1176,6 @@ async def submit(
             jobs[job_id]["agents"]["Treatment_Recommendation_Agent"] = {"status": "done", "output": treatment_recs}
             jobs[job_id]["progress"] = 80
 
-            # Clinical Note Agent
             jobs[job_id]["agents"]["Clinical_Note_Agent"]["status"] = "running"
             note = _clinical_note(
                 {
@@ -1286,7 +1189,6 @@ async def submit(
             jobs[job_id]["agents"]["Clinical_Note_Agent"] = {"status": "done", "output": note}
             jobs[job_id]["progress"] = 90
 
-            # Safety Compliance Agent
             jobs[job_id]["agents"]["Safety_Compliance_Agent"]["status"] = "running"
             safety = _safety_compliance(note, risk)
             jobs[job_id]["agents"]["Safety_Compliance_Agent"] = {"status": "done", "output": safety}

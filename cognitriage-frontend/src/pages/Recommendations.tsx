@@ -23,7 +23,6 @@ export default function Recommendations() {
   const [highMatchTrials, setHighMatchTrials] = useState<Trial[]>([]);
   const [trialsLoading, setTrialsLoading] = useState(false);
 
-  // Fetch high match trials for recommendations
   useEffect(() => {
     if (result && patientData.age && patientData.moca) {
       fetchHighMatchTrials();
@@ -55,11 +54,9 @@ export default function Recommendations() {
       if (response.ok) {
         const data = await response.json();
         const trials = data.trials || [];
-        // Filter only high match trials for recommendations
         const highMatch = trials.filter((trial: Trial) => trial.match_score === 'high');
         setHighMatchTrials(highMatch);
       } else {
-        // Fallback to demo high match trials
         setHighMatchTrials(getDemoHighMatchTrials());
       }
     } catch (error) {
@@ -86,7 +83,6 @@ export default function Recommendations() {
 
   const handleGenerateReport = () => {
     setIsGeneratingReport(true);
-    // Create a printable version of the recommendations
     setTimeout(() => {
       window.print();
       setIsGeneratingReport(false);
@@ -103,17 +99,14 @@ export default function Recommendations() {
     
     const emailSubject = `Neuro Triage Analysis Report - ${currentDate}`;
     
-    // Format medical management recommendations
     const medicalRecommendations = treatment_recommendations?.medical_management?.map((item: any, index: number) => 
       `   ${index + 1}. ${item.intervention}${item.rationale ? ` (${item.rationale})` : ''}`
     ).join('\n') || '   No specific medical interventions recommended at this time.';
     
-    // Format referrals
     const referrals = treatment_recommendations?.referrals?.map((ref: any, index: number) => 
       `   ${index + 1}. ${ref.specialist}${ref.timeframe ? ` - Timeline: ${ref.timeframe}` : ' - Standard timeline'}${ref.rationale ? `\n      Rationale: ${ref.rationale}` : ''}`
     ).join('\n') || '   No specialist referrals needed at this time.';
     
-    // Format lifestyle interventions
     const lifestyleInterventions = treatment_recommendations?.lifestyle_interventions?.map((item: any, index: number) => 
       `   ${index + 1}. ${item.intervention}${item.evidence_level ? ` (Evidence Level: ${item.evidence_level})` : ''}`
     ).join('\n') || '   No specific lifestyle interventions recommended.';
@@ -163,8 +156,7 @@ Generated on ${currentDate}`;
     const mailtoUrl = `mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
     window.location.href = mailtoUrl;
   };
-  
-  // If no analysis has been run, show message
+
   if (!result || !treatment_recommendations) {
     return (
       <div className="space-y-6">

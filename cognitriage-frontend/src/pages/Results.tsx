@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { BarChart3, Mail, Pill } from 'lucide-react';
-import BrainVisualization from '../components/BrainVisualization'; // Assuming BrainVisualization is in this location
+import BrainVisualization from '../components/BrainVisualization'; 
 
 export default function Results() {
   const { analysisResult } = useAppContext();
@@ -20,7 +20,6 @@ export default function Results() {
     if (navigator.share) {
       navigator.share(shareData).catch(console.error);
     } else {
-      // Fallback: copy to clipboard
       const textToCopy = `Cognitive Assessment Results\nRisk Tier: ${result?.triage?.risk_tier || 'N/A'}\nConfidence: ${Math.round((result?.triage?.confidence_score || 0) * 100)}%\nView full results: ${window.location.href}`;
       navigator.clipboard.writeText(textToCopy).then(() => {
         alert('Results copied to clipboard!');
@@ -33,7 +32,6 @@ export default function Results() {
   console.log('Results page - analysisResult:', analysisResult);
   console.log('Results page - result:', result);
   
-  // If no analysis has been run, show message
   if (!result) {
     return (
       <div className="space-y-6">

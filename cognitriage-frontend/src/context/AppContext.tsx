@@ -19,15 +19,12 @@ export interface AnalysisResult {
 }
 
 interface AppContextType {
-  // Patient data
   patientData: PatientData;
   setPatientData: (data: Partial<PatientData>) => void;
   
-  // Analysis results
   analysisResult: AnalysisResult;
   setAnalysisResult: (result: Partial<AnalysisResult>) => void;
   
-  // Clear all data
   clearAll: () => void;
 }
 

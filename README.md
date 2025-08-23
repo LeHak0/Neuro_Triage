@@ -12,8 +12,8 @@ Deployed:
 
 Quick demo (production):
 1) Open the frontend link above
-2) Click “Use Demo Case”
-3) Click “Start Analysis”
+2) Click "Use Demo Case"
+3) Click "Start Analysis"
 
 Local development:
 
@@ -39,6 +39,5 @@ Notes
 - MRI handling is simulated for demo; do not upload PHI.
 - Sequential agent pipeline with per-agent status and evidence.
 
-Link to Devin run: https://app.devin.ai/sessions/01056e81475043939cc68201a2c3ff6d
 Requested by: loubaba@stanford.edu (@loubabaelayoubi)
 # Speed test

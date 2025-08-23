@@ -10,7 +10,6 @@ export default function Dashboard() {
   const [dragOver, setDragOver] = useState(false)
   const pollRef = useRef<number | null>(null)
 
-  // Extract values from context
   const { files, moca, age, sex } = patientData;
   const { jobId, status } = analysisResult;
 
@@ -67,7 +66,6 @@ export default function Dashboard() {
     setDragOver(false)
     const droppedFiles = Array.from(e.dataTransfer.files)
     if (droppedFiles.length > 0) {
-      // Only take the first file
       setPatientData({ files: [droppedFiles[0]] })
     }
   }, [setPatientData])
@@ -84,7 +82,6 @@ export default function Dashboard() {
 
   const onSelectFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
-    // Only take the first file
     setPatientData({ files: [e.target.files[0]] })
   }, [setPatientData])
 
@@ -127,7 +124,6 @@ export default function Dashboard() {
     }
   }
 
-  // Polling logic
   useEffect(() => {
     if (!jobId) return
 

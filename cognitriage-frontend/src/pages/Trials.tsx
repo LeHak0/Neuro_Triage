@@ -41,13 +41,10 @@ export default function Trials() {
   const [savedTrials, setSavedTrials] = useState<Set<string>>(new Set());
   const [showToast, setShowToast] = useState<Toast | null>(null);
 
-  // Auto-load matched trials when analysis is available
   useEffect(() => {
-    // Load trials if we have basic patient data, even without full analysis
     if (patientData.age && patientData.moca) {
       fetchMatchedTrials();
     } else if (result) {
-      // Also try if we have analysis result
       fetchMatchedTrials();
     }
   }, [result, patientData]);
@@ -58,7 +55,6 @@ export default function Trials() {
       const riskTier = result?.triage?.risk_tier || 'MODERATE';
       const imagingFindings = result?.note?.imaging_findings || {};
       
-      // Use patient data or fallback values for demo
       const requestData = {
         risk_tier: riskTier,
         imaging_findings: imagingFindings,
@@ -83,14 +79,12 @@ export default function Trials() {
         setTrials(data.trials || []);
       } else {
         console.error('Failed to fetch trials:', response.status);
-        // Set fallback demo trials if API fails
         setTrials(getDemoTrials());
         setShowToast({ type: 'error', message: 'Failed to load trials' });
         setTimeout(() => setShowToast(null), 3000);
       }
     } catch (error) {
       console.error('Error fetching matched trials:', error);
-      // Set fallback demo trials if network fails
       setTrials(getDemoTrials());
       setShowToast({ type: 'error', message: 'Network error' });
       setTimeout(() => setShowToast(null), 3000);
@@ -99,7 +93,6 @@ export default function Trials() {
     }
   };
 
-  // Fallback demo trials for testing
   const getDemoTrials = (): Trial[] => [
     {
       nct_id: "NCT05123456",
@@ -195,7 +188,6 @@ export default function Trials() {
       setSavedTrials(newSavedTrials);
       setShowToast({message: 'Trial saved successfully!', type: 'success'});
     }
-    // Auto-hide toast after 3 seconds
     setTimeout(() => setShowToast(null), 3000);
   };
 
@@ -221,7 +213,6 @@ Thank you for your time.
 
 Best regards`);
     
-    // Try to open default email client
     const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
     window.open(mailtoLink, '_blank');
     

@@ -3,8 +3,7 @@
 @tailwind utilities;
 @layer base {
   :root {
-    --radius: 0.5rem
-  ;
+    --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -12,7 +11,8 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%}
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
   .dark {
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -21,35 +21,29 @@
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
-/* Print styles to hide sidebar and UI elements */
 @media print {
-  /* Hide sidebar component */
   .min-h-screen.bg-gray-50.flex > *:first-child {
     display: none !important;
   }
   
-  /* Hide header */
   header {
     display: none !important;
   }
   
-  /* Hide buttons and interactive elements */
   button,
   .button {
     display: none !important;
   }
   
-  /* Restructure layout for print */
   .min-h-screen.bg-gray-50.flex {
     display: block !important;
     background: white !important;
   }
   
-  /* Ensure main content takes full width and remove padding */
   .flex-1.flex.flex-col {
     width: 100% !important;
     margin: 0 !important;
@@ -63,7 +57,6 @@
     max-width: none !important;
   }
   
-  /* Clean up page layout for printing */
   body {
     background: white !important;
     color: black !important;
@@ -71,15 +64,11 @@
     padding: 0 !important;
   }
   
-  /* Ensure proper page breaks */
   .space-y-6 > * {
     page-break-inside: avoid;
   }
-  
-  /* Style headings for print */
   h1, h2, h3 {
     color: black !important;
     page-break-after: avoid;
   }
 }
-
