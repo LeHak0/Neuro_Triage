@@ -4,29 +4,67 @@ interface BrainSlice {
   axial?: string;
   coronal?: string;
   sagittal?: string;
+  axial_heatmap?: string;
+  coronal_heatmap?: string;
+  sagittal_heatmap?: string;
+}
+
+interface HeatmapCoordinate {
+  x: number;
+  y: number;
+  intensity: number;
+  region: string;
+}
+
+interface HeatmapData {
+  axial: HeatmapCoordinate[];
+  coronal: HeatmapCoordinate[];
+  sagittal: HeatmapCoordinate[];
+}
+
+interface AbnormalityRegion {
+  name: string;
+  coordinates: number[];
+  abnormality_score: number;
+  description: string;
+  severity: string;
+  color: string;
 }
 
 interface BrainVisualizationProps {
   slices: BrainSlice;
   volumes: any;
   qualityMetrics: any;
+  heatmapData?: HeatmapData;
+  abnormalityRegions?: Record<string, AbnormalityRegion>;
 }
 
-export default function BrainVisualization({ slices, volumes, qualityMetrics }: BrainVisualizationProps) {
+export default function BrainVisualization({ 
+  slices, 
+  volumes, 
+  qualityMetrics, 
+  heatmapData,
+  abnormalityRegions 
+}: BrainVisualizationProps) {
   const [activeView, setActiveView] = useState<'axial' | 'coronal' | 'sagittal'>('axial');
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(true);
 
   // Check if we have any actual brain slice images (non-empty base64 strings)
   const hasSliceImages = !!slices && Object.values(slices).some(
     (slice) => typeof slice === 'string' && slice.trim().length > 0
   );
 
-  console.log('BrainVisualization props:', { slices, volumes, qualityMetrics });
+  console.log('BrainVisualization props:', { slices, volumes, qualityMetrics, heatmapData, abnormalityRegions });
   console.log('BrainVisualization - slices type:', typeof slices);
   console.log('BrainVisualization - slices value:', slices);
   console.log('Active view:', activeView);
   console.log('Current slice data:', slices && slices[activeView] ? 'Present' : 'Missing');
   console.log('Slices object keys:', Object.keys(slices || {}));
   console.log('hasSliceImages:', hasSliceImages);
+  console.log('Quality Metrics Debug:', qualityMetrics);
+  console.log('Quality Metrics SNR:', qualityMetrics?.snr);
+  console.log('Quality Metrics Score:', qualityMetrics?.quality_score);
   
   // More detailed slice debugging
   if (slices) {
@@ -38,6 +76,10 @@ export default function BrainVisualization({ slices, volumes, qualityMetrics }: 
   }
   
   console.log('BrainVisualization volumes:', volumes);
+
+  const handleRegionClick = (regionKey: string) => {
+    setSelectedRegion(selectedRegion === regionKey ? null : regionKey);
+  };
 
   // Safety checks for data structure
   if (!volumes) {
@@ -116,15 +158,67 @@ export default function BrainVisualization({ slices, volumes, qualityMetrics }: 
           <div className="lg:col-span-2">
             <div className="relative bg-black rounded-lg overflow-hidden aspect-square">
               {slices && slices[activeView] ? (
-                <img 
-                  src={`data:image/png;base64,${slices[activeView]}`}
-                  alt={`Brain ${activeView} view`}
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    console.error('Image failed to load:', e);
-                    console.log('Image src length:', slices[activeView]?.length);
-                  }}
-                />
+                <div className="relative w-full h-full">
+                  <img 
+                    src={`data:image/png;base64,${slices[activeView]}`}
+                    alt={`Brain ${activeView} view`}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      console.error('Image failed to load:', e);
+                      console.log('Image src length:', slices[activeView]?.length);
+                    }}
+                  />
+                  
+                  {/* Heatmap Overlay */}
+                  {showHeatmap && slices && slices[`${activeView}_heatmap`] && (
+                    <img 
+                      src={`data:image/png;base64,${slices[`${activeView}_heatmap`]}`}
+                      alt={`Heatmap ${activeView} view`}
+                      className="absolute inset-0 w-full h-full object-contain"
+                    />
+                  )}
+                  
+                  {/* Interactive Region Overlays */}
+                  {abnormalityRegions && Object.entries(abnormalityRegions).map(([regionKey, region]) => (
+                    <div
+                      key={regionKey}
+                      className="absolute cursor-pointer hover:opacity-75 transition-opacity"
+                      style={{
+                        left: `${region.coordinates[0]}%`,
+                        top: `${region.coordinates[1]}%`,
+                        width: '20px',
+                        height: '20px',
+                        backgroundColor: region.color,
+                        borderRadius: '50%',
+                        border: '2px solid white',
+                        transform: 'translate(-50%, -50%)',
+                        boxShadow: selectedRegion === regionKey ? '0 0 10px rgba(255,255,255,0.8)' : 'none'
+                      }}
+                      onClick={() => handleRegionClick(regionKey)}
+                      title={`${region.name} - ${region.severity} (${region.abnormality_score.toFixed(2)})`}
+                    />
+                  ))}
+                  
+                  {/* Interactive Heatmap Points */}
+                  {heatmapData && heatmapData[activeView] && heatmapData[activeView].map((coordinate, index) => (
+                    <div
+                      key={`heatmap-${index}`}
+                      className="absolute cursor-pointer hover:scale-110 transition-transform"
+                      style={{
+                        left: `${coordinate.x}%`,
+                        top: `${coordinate.y}%`,
+                        width: '12px',
+                        height: '12px',
+                        backgroundColor: `rgba(255, 0, 0, ${coordinate.intensity})`,
+                        borderRadius: '50%',
+                        border: '1px solid rgba(255,255,255,0.8)',
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 10
+                      }}
+                      title={`${coordinate.region} - Intensity: ${coordinate.intensity.toFixed(2)}`}
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-400">
                   <div className="text-center">
@@ -143,14 +237,27 @@ export default function BrainVisualization({ slices, volumes, qualityMetrics }: 
               )}
             </div>
 
-            {/* Image Navigation */}
-            <div className="mt-4 flex justify-center space-x-2">
-              <div className="bg-gray-100 rounded-lg px-4 py-2 text-sm text-gray-600">
-                <span className="font-medium">Slice:</span> Central
+            {/* Heatmap Controls */}
+            <div className="mt-4 flex justify-between items-center">
+              <div className="flex space-x-2">
+                <div className="bg-gray-100 rounded-lg px-4 py-2 text-sm text-gray-600">
+                  <span className="font-medium">Slice:</span> Central
+                </div>
+                <div className="bg-gray-100 rounded-lg px-4 py-2 text-sm text-gray-600">
+                  <span className="font-medium">Contrast:</span> T1-weighted
+                </div>
               </div>
-              <div className="bg-gray-100 rounded-lg px-4 py-2 text-sm text-gray-600">
-                <span className="font-medium">Contrast:</span> T1-weighted
-              </div>
+              
+              <button
+                onClick={() => setShowHeatmap(!showHeatmap)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  showHeatmap 
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
+              </button>
             </div>
           </div>
 
@@ -215,33 +322,9 @@ export default function BrainVisualization({ slices, volumes, qualityMetrics }: 
                 </div>
               </div>
             </div>
-
-            {/* Quality Metrics */}
-            {qualityMetrics && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h5 className="font-medium text-gray-900 mb-2">Image Quality</h5>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Signal-to-Noise Ratio:</span>
-                    <span className="font-medium">{qualityMetrics.snr?.toFixed(1) || 'N/A'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Quality Score:</span>
-                    <span className={`font-medium ${
-                      qualityMetrics.quality_score === 'good' ? 'text-green-600' :
-                      qualityMetrics.quality_score === 'fair' ? 'text-yellow-600' :
-                      'text-red-600'
-                    }`}>
-                      {qualityMetrics.quality_score || 'Unknown'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
     </div>
   );
 };
-

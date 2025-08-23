@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { BarChart3, Mail, Pill } from 'lucide-react';
+import BrainVisualization from '../components/BrainVisualization'; // Assuming BrainVisualization is in this location
 
 export default function Results() {
   const { analysisResult } = useAppContext();
@@ -168,6 +169,17 @@ export default function Results() {
           </div>
         </div>
       </div>
+
+      {/* Brain Visualization */}
+      {result?.imaging && (
+        <BrainVisualization 
+          slices={result.imaging.thumbnails}
+          volumes={result.imaging}
+          qualityMetrics={result.imaging.quality_metrics}
+          heatmapData={result.imaging.heatmap_coordinates}
+          abnormalityRegions={result.imaging.abnormality_regions}
+        />
+      )}
 
       {/* Quality Metrics */}
       {imagingFindings.quality_metrics && Object.keys(imagingFindings.quality_metrics).length > 0 && (
