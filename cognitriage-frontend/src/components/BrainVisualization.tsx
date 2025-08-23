@@ -21,15 +21,22 @@ export default function BrainVisualization({ slices, volumes, qualityMetrics }: 
   );
 
   console.log('BrainVisualization props:', { slices, volumes, qualityMetrics });
+  console.log('BrainVisualization - slices type:', typeof slices);
+  console.log('BrainVisualization - slices value:', slices);
   console.log('Active view:', activeView);
-  console.log('Current slice data:', slices[activeView] ? 'Present' : 'Missing');
+  console.log('Current slice data:', slices && slices[activeView] ? 'Present' : 'Missing');
   console.log('Slices object keys:', Object.keys(slices || {}));
   console.log('hasSliceImages:', hasSliceImages);
-  if (slices && slices[activeView]) {
-    console.log(`${activeView} slice length:`, slices[activeView].length);
-    console.log(`${activeView} slice preview:`, slices[activeView].substring(0, 50) + '...');
+  
+  // More detailed slice debugging
+  if (slices) {
+    Object.keys(slices).forEach(view => {
+      const viewKey = view as keyof BrainSlice;
+      const sliceData = slices[viewKey];
+      console.log(`${view} slice:`, sliceData ? `Length: ${sliceData.length}, Preview: ${sliceData.substring(0, 30)}...` : 'Empty');
+    });
   }
-
+  
   console.log('BrainVisualization volumes:', volumes);
 
   // Safety checks for data structure

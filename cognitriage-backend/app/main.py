@@ -450,10 +450,15 @@ def _imaging_features(files: List[UploadFile], meta: Dict[str, Any]) -> Dict[str
         nifti_file = nifti_files[0]
         
         # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.nii.gz') as tmp_file:
+        file_extension = '.nii.gz' if nifti_file.filename.lower().endswith('.nii.gz') else '.nii'
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp_file:
+            # Reset file pointer to beginning
+            nifti_file.file.seek(0)
             content = nifti_file.file.read()
             tmp_file.write(content)
             tmp_file_path = tmp_file.name
+            print(f"Saved uploaded file to: {tmp_file_path} (size: {len(content)} bytes)")
+            print(f"Original filename: {nifti_file.filename}, detected extension: {file_extension}")
         
         try:
             # Process with real neuroimaging
@@ -474,12 +479,22 @@ def _imaging_features(files: List[UploadFile], meta: Dict[str, Any]) -> Dict[str
                 "processing_type": "real_nifti"
             }
             
+        except Exception as e:
+            print(f"Real NIFTI processing failed: {e}")
+            print(f"Error type: {type(e).__name__}")
+            import traceback
+            print("Full traceback:")
+            traceback.print_exc()
+            print(f"File info - name: {nifti_file.filename}, size: {len(content) if 'content' in locals() else 'unknown'}")
+            # Fallback to simulated processing
+            return _simulated_imaging_features(files, meta)
+            
         finally:
             # Clean up temporary file
             os.unlink(tmp_file_path)
             
     except Exception as e:
-        print(f"Real NIFTI processing failed: {e}")
+        print(f"Error processing NIFTI file: {e}")
         # Fallback to simulated processing
         return _simulated_imaging_features(files, meta)
 
@@ -864,6 +879,11 @@ async def demo_submit(background_tasks: BackgroundTasks):
                     
                 except Exception as e:
                     print(f"Real NIFTI processing failed for demo: {e}")
+                    print(f"Error type: {type(e).__name__}")
+                    import traceback
+                    print("Full traceback:")
+                    traceback.print_exc()
+                    print(f"File info - name: {demo_file.filename}, size: {len(file_content)}")
                     # Fallback to simulated features
                     feats = _simulated_imaging_features(demo_files, demo_meta)
                 
@@ -1018,10 +1038,15 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                     
                     # Save demo file temporarily
                     demo_file = demo_files[0]
-                    with tempfile.NamedTemporaryFile(delete=False, suffix='.nii.gz') as tmp_file:
+                    file_extension = '.nii.gz' if demo_file.filename.lower().endswith('.nii.gz') else '.nii'
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp_file:
+                        # Reset file pointer to beginning
                         demo_file.file.seek(0)
-                        tmp_file.write(demo_file.file.read())
+                        content = demo_file.file.read()
+                        tmp_file.write(content)
                         tmp_file_path = tmp_file.name
+                        print(f"Saved uploaded file to: {tmp_file_path} (size: {len(content)} bytes)")
+                        print(f"Original filename: {demo_file.filename}, detected extension: {file_extension}")
                     
                     # Process with real neuroimaging
                     feats = process_uploaded_nifti(tmp_file_path, demo_meta)
@@ -1054,6 +1079,11 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                     
                 except Exception as e:
                     print(f"Real NIFTI processing failed for pathology demo: {e}")
+                    print(f"Error type: {type(e).__name__}")
+                    import traceback
+                    print("Full traceback:")
+                    traceback.print_exc()
+                    print(f"File info - name: {demo_file.filename}, size: {len(content)}")
                     # Fallback to simulated features
                     feats = _simulated_imaging_features(demo_files, demo_meta)
                 

@@ -65,12 +65,12 @@ export default function Dashboard() {
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setDragOver(false)
-    const incoming: File[] = []
-    for (let i = 0; i < e.dataTransfer.files.length; i++) {
-      incoming.push(e.dataTransfer.files[i])
+    const droppedFiles = Array.from(e.dataTransfer.files)
+    if (droppedFiles.length > 0) {
+      // Only take the first file
+      setPatientData({ files: [droppedFiles[0]] })
     }
-    setPatientData({ files: [...files, ...incoming] })
-  }, [files, setPatientData])
+  }, [setPatientData])
 
   const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -83,13 +83,10 @@ export default function Dashboard() {
   }, [])
 
   const onSelectFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return
-    const incoming: File[] = []
-    for (let i = 0; i < e.target.files.length; i++) {
-      incoming.push(e.target.files[i])
-    }
-    setPatientData({ files: [...files, ...incoming] })
-  }, [files, setPatientData])
+    if (!e.target.files || e.target.files.length === 0) return
+    // Only take the first file
+    setPatientData({ files: [e.target.files[0]] })
+  }, [setPatientData])
 
   const removeFile = (idx: number) => {
     setPatientData({ files: files.filter((_, i) => i !== idx) })
@@ -206,11 +203,10 @@ export default function Dashboard() {
               <div className="space-y-2">
                 <Upload className="w-10 h-10 mx-auto text-gray-400" />
                 <div className="text-sm text-gray-600">
-                  Drag and drop NIfTI files (.nii, .nii.gz) or DICOM files
+                  Drag and drop NIfTI file (.nii, .nii.gz) or DICOM file
                 </div>
                 <input
                   type="file"
-                  multiple
                   accept=".nii,.nii.gz,.dcm,.dicom"
                   onChange={onSelectFiles}
                   className="hidden"
@@ -220,14 +216,14 @@ export default function Dashboard() {
                   htmlFor="file-upload"
                   className="inline-block px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer hover:bg-blue-700"
                 >
-                  Choose Files
+                  Choose File
                 </label>
               </div>
             </div>
 
             {files.length > 0 && (
               <div className="mt-4 space-y-2">
-                <h3 className="font-medium">Selected Files:</h3>
+                <h3 className="font-medium">Selected File:</h3>
                 {files.map((file, i) => (
                   <div key={i} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                     <span className="text-sm">{file.name}</span>

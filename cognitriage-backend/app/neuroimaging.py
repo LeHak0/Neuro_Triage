@@ -102,8 +102,10 @@ class NeuroimagingProcessor:
         if len(data.shape) < 3:
             raise ValueError("NIFTI file must be 3D or 4D")
         
-        # Check for reasonable brain dimensions
-        if any(dim < 50 or dim > 500 for dim in data.shape[:3]):
+        # Check for reasonable brain dimensions (relaxed for fMRI)
+        print(f"NIFTI dimensions: {data.shape}")
+        if any(dim < 10 or dim > 1000 for dim in data.shape[:3]):
+            print(f"Rejecting file with dimensions: {data.shape[:3]}")
             raise ValueError("Unusual brain dimensions detected")
         
         # Check for valid intensity range
@@ -211,28 +213,35 @@ class NeuroimagingProcessor:
         try:
             data = img.get_fdata()
             print(f"Generating thumbnails for image with shape: {data.shape}")
+            print(f"Data type: {data.dtype}, min: {np.min(data)}, max: {np.max(data)}")
+            print(f"Non-zero values: {np.count_nonzero(data)}")
             
             thumbnails = {}
             
             # Axial slice (middle)
             axial_slice = data[:, :, data.shape[2] // 2]
+            print(f"Axial slice shape: {axial_slice.shape}, min: {np.min(axial_slice)}, max: {np.max(axial_slice)}")
             thumbnails["axial"] = self._array_to_base64(axial_slice)
-            print("Generated axial thumbnail")
+            print(f"Generated axial thumbnail: {'SUCCESS' if thumbnails['axial'] else 'FAILED'}")
             
             # Coronal slice (middle)
             coronal_slice = data[:, data.shape[1] // 2, :]
+            print(f"Coronal slice shape: {coronal_slice.shape}, min: {np.min(coronal_slice)}, max: {np.max(coronal_slice)}")
             thumbnails["coronal"] = self._array_to_base64(coronal_slice)
-            print("Generated coronal thumbnail")
+            print(f"Generated coronal thumbnail: {'SUCCESS' if thumbnails['coronal'] else 'FAILED'}")
             
             # Sagittal slice (middle)
             sagittal_slice = data[data.shape[0] // 2, :, :]
+            print(f"Sagittal slice shape: {sagittal_slice.shape}, min: {np.min(sagittal_slice)}, max: {np.max(sagittal_slice)}")
             thumbnails["sagittal"] = self._array_to_base64(sagittal_slice)
-            print("Generated sagittal thumbnail")
+            print(f"Generated sagittal thumbnail: {'SUCCESS' if thumbnails['sagittal'] else 'FAILED'}")
             
             return thumbnails
             
         except Exception as e:
             print(f"Error generating thumbnails: {e}")
+            import traceback
+            traceback.print_exc()
             return {"axial": None, "coronal": None, "sagittal": None}
     
     def _array_to_base64(self, array: np.ndarray) -> Optional[str]:

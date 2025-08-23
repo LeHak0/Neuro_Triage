@@ -8,8 +8,28 @@ export default function BrainView() {
   
   // Get brain data from context or use empty fallback
   const imagingFindings = result?.note?.imaging_findings || {};
+  
+  // Backend always returns slice data in 'thumbnails' for both demo and uploaded files
+  const sliceData = imagingFindings.thumbnails || {};
+  
+  console.log('BrainView - Full result object:', result);
+  console.log('BrainView - imagingFindings:', imagingFindings);
+  console.log('BrainView - imagingFindings keys:', Object.keys(imagingFindings));
+  console.log('BrainView - slices from imagingFindings.slices:', imagingFindings.slices);
+  console.log('BrainView - thumbnails from imagingFindings.thumbnails:', imagingFindings.thumbnails);
+  console.log('BrainView - final sliceData:', sliceData);
+  console.log('BrainView - sliceData keys:', Object.keys(sliceData || {}));
+  
+  // Check if slices are nested deeper
+  if (imagingFindings.slices) {
+    console.log('BrainView - slices structure:', typeof imagingFindings.slices, imagingFindings.slices);
+  }
+  if (imagingFindings.thumbnails) {
+    console.log('BrainView - thumbnails structure:', typeof imagingFindings.thumbnails, imagingFindings.thumbnails);
+  }
+  
   const brainData = {
-    slices: imagingFindings.thumbnails || {},
+    slices: sliceData,
     volumes: imagingFindings,
     qualityMetrics: imagingFindings.quality_metrics || {}
   };
