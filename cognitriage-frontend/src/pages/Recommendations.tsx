@@ -252,25 +252,6 @@ Generated on ${currentDate}`;
           </div>
         </div>
       )}
-
-      {/* Confidence Scores */}
-      {treatment_recommendations.confidence_scores && (
-        <div className="border border-zinc-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">Recommendation Confidence</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(treatment_recommendations.confidence_scores).map(([category, score]: [string, any]) => (
-              <div key={category} className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {Math.round(score * 100)}%
-                </div>
-                <div className="text-xs text-gray-500 capitalize">
-                  {category.replace('_', ' ')}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
