@@ -41,3 +41,4 @@ Notes
 
 Link to Devin run: https://app.devin.ai/sessions/01056e81475043939cc68201a2c3ff6d
 Requested by: loubaba@stanford.edu (@loubabaelayoubi)
+# Speed test
