@@ -1,28 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { getStatus, getResult, type StatusResponse, type ResultResponse, type RiskTier } from "./lib/api"
 import { Button } from "@/components/ui/button"
-import KnowledgeGraph from './components/KnowledgeGraph';
 import BrainVisualization from './components/BrainVisualization';
 import "./index.css"
 
-type AgentName =
-  | "Ingestion_QC_Agent"
-  | "Imaging_Feature_Agent"
-  | "Risk_Stratification_Agent"
-  | "Evidence_RAG_Agent"
-  | "Clinical_Trials_Agent"
-  | "Clinical_Note_Agent"
-  | "Safety_Compliance_Agent"
-
-  const agentIcons: Record<AgentName, string> = {
-    Ingestion_QC_Agent: "✅",
-    Imaging_Feature_Agent: "🧠",
-    Risk_Stratification_Agent: "⚖️",
-    Evidence_RAG_Agent: "📚",
-    Clinical_Trials_Agent: "🔬",
-    Clinical_Note_Agent: "📄",
-    Safety_Compliance_Agent: "🛡️",
-  }
 
 function riskColor(tier?: RiskTier) {
   switch (tier) {
@@ -207,7 +188,7 @@ export default function App() {
 
       <main className="mx-auto max-w-7xl px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* upload_zone */}
-        <section className="lg:col-span-4 border border-zinc-200 rounded-lg p-4" aria-labelledby="upload-heading">
+        <section className="lg:col-span-8 border border-zinc-200 rounded-lg p-4" aria-labelledby="upload-heading">
           <h2 id="upload-heading" className="text-base font-semibold mb-3">
             Upload and Patient Info
           </h2>
@@ -320,39 +301,6 @@ export default function App() {
           )}
         </section>
 
-        {/* agent_pipeline_status */}
-        <section className="lg:col-span-4 border border-zinc-200 rounded-lg p-4" aria-labelledby="pipeline-heading">
-          <h2 id="pipeline-heading" className="text-base font-semibold mb-3">
-            Agent Pipeline
-          </h2>
-          <div className="flex flex-col gap-2">
-          {(["Ingestion_QC_Agent","Imaging_Feature_Agent","Risk_Stratification_Agent","Evidence_RAG_Agent","Clinical_Trials_Agent","Clinical_Note_Agent","Safety_Compliance_Agent"] as AgentName[]).map((a) => {
-              const st = status?.agents?.[a]?.status ?? "pending"
-              return (
-                <div key={a} className="flex items-center justify-between border border-zinc-200 rounded-md px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <span aria-hidden>{agentIcons[a]}</span>
-                    <span className="text-sm">{String(a).replace(/_/g, " ")}</span>
-                  </div>
-                  <span
-                    className={`text-xs px-2 py-1 rounded border ${
-                      st === "done"
-                        ? "bg-green-50 text-green-700 border-green-200"
-                        : st === "running"
-                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                        : st === "failed"
-                        ? "bg-red-50 text-red-700 border-red-200"
-                        : "bg-zinc-50 text-zinc-700 border-zinc-200"
-                    }`}
-                    aria-label={`${a} status ${st}`}
-                  >
-                    {st}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </section>
 
         {/* triage_card */}
         <section className="lg:col-span-4 border border-zinc-200 rounded-lg p-4" aria-labelledby="triage-heading">
@@ -407,18 +355,6 @@ export default function App() {
           )}
         </section>
 
-        {/* Knowledge Graph Panel */}
-        <section className="lg:col-span-12 mb-6">
-          {result?.result ? (
-            <KnowledgeGraph data={result.result} />
-          ) : (
-            <div className="border border-zinc-200 rounded-lg p-8 text-center">
-              <div className="text-4xl mb-4">🔗</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Knowledge Graph</h3>
-              <p className="text-sm text-zinc-600">Process patient data to view interactive knowledge graph of neuroimaging relationships.</p>
-            </div>
-          )}
-        </section>
 
         {/* evidence_panel */}
         <section className="lg:col-span-6 border border-zinc-200 rounded-lg p-4" aria-labelledby="evidence-heading">
