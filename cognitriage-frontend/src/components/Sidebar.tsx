@@ -10,7 +10,7 @@ const navigationItems = [
     name: 'Main',
     href: '/',
     icon: 'home',
-    description: 'Upload & Analysis'
+    description: 'Upload'
   },
   {
     name: 'Brain',
