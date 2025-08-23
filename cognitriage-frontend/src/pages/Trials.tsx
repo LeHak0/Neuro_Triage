@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useAppContext } from '../context/AppContext';
@@ -18,7 +18,13 @@ export default function Trials() {
   const { result } = analysisResult;
   const [trials, setTrials] = useState<Trial[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFilters, setSearchFilters] = useState({
+    condition: 'Mild Cognitive Impairment',
+    phase: 'All Phases',
+    location: '',
+    minAge: '',
+    maxAge: ''
+  });
 
   // Load trials from analysis result if available
   useEffect(() => {
@@ -73,7 +79,11 @@ export default function Trials() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Condition</label>
-                <select className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                <select 
+                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                  value={searchFilters.condition}
+                  onChange={(e) => setSearchFilters({...searchFilters, condition: e.target.value})}
+                >
                   <option>Mild Cognitive Impairment</option>
                   <option>Alzheimer's Disease</option>
                   <option>Dementia</option>
@@ -83,7 +93,11 @@ export default function Trials() {
 
               <div>
                 <label className="text-sm font-medium">Study Phase</label>
-                <select className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm">
+                <select 
+                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                  value={searchFilters.phase}
+                  onChange={(e) => setSearchFilters({...searchFilters, phase: e.target.value})}
+                >
                   <option>All Phases</option>
                   <option>Phase I</option>
                   <option>Phase II</option>
@@ -98,6 +112,8 @@ export default function Trials() {
                   type="text"
                   placeholder="City, State, or Country"
                   className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                  value={searchFilters.location}
+                  onChange={(e) => setSearchFilters({...searchFilters, location: e.target.value})}
                 />
               </div>
 
@@ -108,11 +124,15 @@ export default function Trials() {
                     type="number"
                     placeholder="Min"
                     className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                    value={searchFilters.minAge}
+                    onChange={(e) => setSearchFilters({...searchFilters, minAge: e.target.value})}
                   />
                   <input
                     type="number"
                     placeholder="Max"
                     className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                    value={searchFilters.maxAge}
+                    onChange={(e) => setSearchFilters({...searchFilters, maxAge: e.target.value})}
                   />
                 </div>
               </div>
