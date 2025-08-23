@@ -26,12 +26,10 @@ def treatment_recommendation_agent(
         Dict containing treatment recommendations with confidence scores
     """
     
-    # Extract key parameters
     age = patient_info.get("age", 70) if patient_info else 70
     sex = patient_info.get("sex", "U") if patient_info else "U"
     moca_score = patient_info.get("moca_total", 24) if patient_info else 24
     
-    # Extract imaging metrics
     hippocampal_vols = imaging_findings.get("hippocampal_volumes", {})
     mta_score = imaging_findings.get("mta_score", 0)
     percentiles = imaging_findings.get("percentiles", {})
@@ -41,7 +39,6 @@ def treatment_recommendation_agent(
         hippocampal_vols.get("right_ml", 3.5)
     )
     
-    # Initialize recommendations structure
     recommendations = {
         "lifestyle_interventions": [],
         "medical_management": [],
@@ -52,7 +49,6 @@ def treatment_recommendation_agent(
         "rationale": []
     }
     
-    # Risk-based treatment recommendations
     if risk_tier == "LOW":
         _add_low_risk_recommendations(recommendations, age, moca_score)
         base_confidence = 0.85
@@ -73,7 +69,6 @@ def treatment_recommendation_agent(
         _add_default_recommendations(recommendations)
         base_confidence = 0.60
     
-    # Age-specific modifications
     if age >= 75:
         recommendations["medical_management"].append({
             "intervention": "Comprehensive geriatric assessment",
@@ -82,7 +77,6 @@ def treatment_recommendation_agent(
             "rationale": "Advanced age warrants holistic evaluation"
         })
     
-    # Sex-specific considerations
     if sex == "F" and age >= 65:
         recommendations["lifestyle_interventions"].append({
             "intervention": "Hormone replacement therapy evaluation",
@@ -91,7 +85,6 @@ def treatment_recommendation_agent(
             "rationale": "Post-menopausal cognitive protection consideration"
         })
     
-    # Evidence-based enhancements
     if evidence.get("search_type") == "pubmed_live":
         citations_count = len(evidence.get("citations", []))
         if citations_count >= 3:
@@ -100,16 +93,14 @@ def treatment_recommendation_agent(
             )
             base_confidence += 0.05
     
-    # Calculate confidence scores for each category
     recommendations["confidence_scores"] = {
-        "lifestyle": min(0.95, base_confidence + 0.10),  # High confidence in lifestyle
+        "lifestyle": min(0.95, base_confidence + 0.10),
         "medical": min(0.90, base_confidence),
         "monitoring": min(0.95, base_confidence + 0.05),
         "referrals": min(0.85, base_confidence - 0.05),
         "overall": min(0.90, base_confidence)
     }
     
-    # Add imaging-specific rationale
     if mta_score >= 3:
         recommendations["rationale"].append(
             f"Elevated MTA score ({mta_score}) supports structured intervention"
@@ -120,7 +111,6 @@ def treatment_recommendation_agent(
             "Significant hippocampal volume loss detected"
         )
     
-    # Priority scoring
     recommendations["priority_score"] = _calculate_priority_score(
         risk_tier, mta_score, moca_score, age
     )
@@ -169,10 +159,8 @@ def _add_low_risk_recommendations(recommendations: Dict, age: int, moca_score: i
 def _add_moderate_risk_recommendations(recommendations: Dict, age: int, moca_score: int, min_vol: float):
     """Add recommendations for moderate-risk patients"""
     
-    # Include low-risk interventions
     _add_low_risk_recommendations(recommendations, age, moca_score)
     
-    # Add moderate-risk specific interventions
     recommendations["medical_management"].extend([
         {
             "intervention": "Vitamin D supplementation assessment",
@@ -211,10 +199,8 @@ def _add_moderate_risk_recommendations(recommendations: Dict, age: int, moca_sco
 def _add_high_risk_recommendations(recommendations: Dict, age: int, moca_score: int, mta_score: int):
     """Add recommendations for high-risk patients"""
     
-    # Include moderate-risk interventions
     _add_moderate_risk_recommendations(recommendations, age, moca_score, 0)
     
-    # Add high-risk specific interventions
     recommendations["medical_management"].extend([
         {
             "intervention": "Comprehensive metabolic panel",
@@ -253,10 +239,8 @@ def _add_high_risk_recommendations(recommendations: Dict, age: int, moca_score: 
 def _add_urgent_risk_recommendations(recommendations: Dict, age: int, moca_score: int, mta_score: int):
     """Add recommendations for urgent-risk patients"""
     
-    # Include high-risk interventions
     _add_high_risk_recommendations(recommendations, age, moca_score, mta_score)
     
-    # Add urgent-specific interventions
     recommendations["medical_management"].extend([
         {
             "intervention": "CSF biomarker evaluation",
@@ -272,7 +256,6 @@ def _add_urgent_risk_recommendations(recommendations: Dict, age: int, moca_score
         }
     ])
     
-    # Upgrade referral urgency
     for referral in recommendations["referrals"]:
         if referral["specialist"] == "Memory clinic/Neurology":
             referral["priority"] = "urgent"
@@ -321,19 +304,16 @@ def _calculate_priority_score(risk_tier: str, mta_score: int, moca_score: int, a
     
     score = base_scores.get(risk_tier, 0.4)
     
-    # MTA score contribution
     if mta_score >= 4:
         score += 0.15
     elif mta_score >= 3:
         score += 0.10
     
-    # MoCA score contribution
     if moca_score < 20:
         score += 0.15
     elif moca_score < 24:
         score += 0.10
     
-    # Age contribution
     if age >= 80:
         score += 0.10
     elif age >= 75:
