@@ -1,27 +1,27 @@
 import { Button } from "@/components/ui/button";
+import { useAppContext } from '../context/AppContext';
 
 export default function Recommendations() {
-  // Mock data - this will come from context/props in real implementation
-  const mockRecommendations = {
-    riskTier: 'MODERATE',
-    primaryRecommendations: [
-      'Recommend follow-up cognitive testing in 6–12 months',
-      'Lifestyle risk factor modification counseling',
-      'Consider neuropsychological evaluation'
-    ],
-    clinicalActions: [
-      'Schedule follow-up MRI in 12 months',
-      'Refer to memory clinic if symptoms progress',
-      'Monitor for changes in daily functioning'
-    ],
-    lifestyleInterventions: [
-      'Regular aerobic exercise (150 min/week)',
-      'Mediterranean diet implementation',
-      'Cognitive training programs',
-      'Social engagement activities',
-      'Sleep hygiene optimization'
-    ]
-  };
+  const { analysisResult } = useAppContext();
+  const { treatment_recommendations, result } = analysisResult;
+  
+  // If no analysis has been run, show message
+  if (!result || !treatment_recommendations) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Treatment Recommendations</h1>
+        </div>
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🔬</div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">No Analysis Available</h2>
+          <p className="text-gray-500">Please run an analysis from the Dashboard first to see treatment recommendations.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const riskTier = result.triage?.risk_tier || 'UNKNOWN';
 
   return (
     <div className="space-y-6">
@@ -41,135 +41,148 @@ export default function Recommendations() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Current Risk Tier</span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                mockRecommendations.riskTier === 'LOW' ? 'bg-green-100 text-green-800' :
-                mockRecommendations.riskTier === 'MODERATE' ? 'bg-yellow-100 text-yellow-800' :
-                mockRecommendations.riskTier === 'HIGH' ? 'bg-orange-100 text-orange-800' :
+                riskTier === 'LOW' ? 'bg-green-100 text-green-800' :
+                riskTier === 'MODERATE' ? 'bg-yellow-100 text-yellow-800' :
+                riskTier === 'HIGH' ? 'bg-orange-100 text-orange-800' :
                 'bg-red-100 text-red-800'
               }`}>
-                {mockRecommendations.riskTier}
+                {riskTier}
               </span>
             </div>
-            
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-medium mb-2">Key Indicators</h3>
-              <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Hippocampal volume reduction</li>
-                <li>• MoCA score below threshold</li>
-                <li>• Age-related risk factors</li>
-              </ul>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Priority Score</span>
+              <span className="text-sm font-medium">
+                {treatment_recommendations.priority_score ? Math.round(treatment_recommendations.priority_score * 100) : 'N/A'}%
+              </span>
+            </div>
+            <div className="text-sm text-gray-600">
+              Based on imaging findings and cognitive assessment, the following recommendations are prioritized for optimal patient care.
             </div>
           </div>
         </div>
 
-        {/* Primary Recommendations */}
-        <div className="lg:col-span-2 border border-zinc-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">Primary Clinical Recommendations</h2>
-          <div className="space-y-4">
-            {mockRecommendations.primaryRecommendations.map((rec, i) => (
-              <div key={i} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
-                <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                  {i + 1}
-                </div>
+        {/* Medical Management */}
+        <div className="border border-zinc-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold mb-4">Medical Management</h2>
+          <div className="space-y-3">
+            {treatment_recommendations.medical_management?.map((item: any, i: number) => (
+              <div key={i} className="flex items-start space-x-3">
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                  item.priority === 'high' ? 'bg-red-600' :
+                  item.priority === 'moderate' ? 'bg-orange-600' : 'bg-blue-600'
+                }`}></div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-900">{rec}</p>
+                  <span className="text-sm text-gray-700 block">{item.intervention}</span>
+                  {item.rationale && (
+                    <span className="text-xs text-gray-500">{item.rationale}</span>
+                  )}
                 </div>
-                <Button variant="ghost" size="sm">
-                  ✓ Mark Done
-                </Button>
               </div>
-            ))}
+            )) || <div className="text-sm text-gray-500">No specific medical interventions recommended</div>}
+          </div>
+        </div>
+
+        {/* Referrals */}
+        <div className="border border-zinc-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold mb-4">Referrals</h2>
+          <div className="space-y-3">
+            {treatment_recommendations.referrals?.map((referral: any, i: number) => (
+              <div key={i} className="flex items-start space-x-3">
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                  referral.priority === 'urgent' ? 'bg-red-600' :
+                  referral.priority === 'high' ? 'bg-orange-600' : 'bg-blue-600'
+                }`}></div>
+                <div className="flex-1">
+                  <span className="text-sm text-gray-700 block">{referral.specialist}</span>
+                  {referral.rationale && (
+                    <span className="text-xs text-gray-500">{referral.rationale}</span>
+                  )}
+                  {referral.timeframe && (
+                    <span className="text-xs text-blue-600 block">Timeline: {referral.timeframe}</span>
+                  )}
+                </div>
+              </div>
+            )) || <div className="text-sm text-gray-500">No specialist referrals needed at this time</div>}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Clinical Actions */}
-        <div className="border border-zinc-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">Clinical Actions</h2>
-          <div className="space-y-3">
-            {mockRecommendations.clinicalActions.map((action, i) => (
-              <div key={i} className="flex items-center space-x-3 p-3 border rounded-lg">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm text-gray-900 flex-1">{action}</span>
-                <span className="text-xs text-gray-500">📅 Schedule</span>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-4 pt-4 border-t">
-            <Button className="w-full">
-              📋 Create Care Plan
-            </Button>
-          </div>
-        </div>
-
-        {/* Lifestyle Interventions */}
-        <div className="border border-zinc-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">Lifestyle Interventions</h2>
-          <div className="space-y-3">
-            {mockRecommendations.lifestyleInterventions.map((intervention, i) => (
-              <div key={i} className="flex items-center space-x-3 p-3 border rounded-lg">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm text-gray-900 flex-1">{intervention}</span>
-                <span className="text-xs text-gray-500">ℹ️ Info</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 pt-4 border-t">
-            <Button variant="outline" className="w-full">
-              📚 Patient Education Materials
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Evidence-Based Guidelines */}
+      {/* Lifestyle Interventions */}
       <div className="border border-zinc-200 rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-4">Evidence-Based Guidelines</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-medium text-sm mb-2">AAN Guidelines</h3>
-            <p className="text-xs text-gray-600 mb-3">
-              American Academy of Neurology practice guidelines for mild cognitive impairment.
-            </p>
-            <Button variant="outline" size="sm" className="w-full">
-              📖 View Guidelines
-            </Button>
-          </div>
-
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-medium text-sm mb-2">NIA-AA Framework</h3>
-            <p className="text-xs text-gray-600 mb-3">
-              Research framework for biological definition of Alzheimer's disease.
-            </p>
-            <Button variant="outline" size="sm" className="w-full">
-              📖 View Framework
-            </Button>
-          </div>
-
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-medium text-sm mb-2">Clinical Trials</h3>
-            <p className="text-xs text-gray-600 mb-3">
-              Current trials for cognitive decline prevention and treatment.
-            </p>
-            <Button variant="outline" size="sm" className="w-full">
-              🔬 Browse Trials
-            </Button>
-          </div>
+        <h2 className="text-lg font-semibold mb-4">Lifestyle Interventions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {treatment_recommendations.lifestyle_interventions?.map((item: any, i: number) => (
+            <div key={i} className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
+              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                item.priority === 'high' ? 'bg-green-700' : 'bg-green-600'
+              }`}></div>
+              <div className="flex-1">
+                <span className="text-sm text-gray-700 block">{item.intervention}</span>
+                {item.evidence_level && (
+                  <span className="text-xs text-green-600">Evidence: Level {item.evidence_level}</span>
+                )}
+              </div>
+            </div>
+          )) || <div className="text-sm text-gray-500 col-span-full text-center py-4">No specific lifestyle interventions recommended</div>}
         </div>
       </div>
 
-      {/* Disclaimers */}
-      <div className="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-yellow-800 mb-2">⚠️ Important Disclaimers</h3>
-        <ul className="text-xs text-yellow-700 space-y-1">
-          <li>• These recommendations are for clinical decision support only</li>
-          <li>• Not for diagnostic use without physician oversight</li>
-          <li>• Results require clinical correlation and medical interpretation</li>
-          <li>• Individual patient factors must be considered in treatment planning</li>
-        </ul>
-      </div>
+      {/* Monitoring Schedule */}
+      {treatment_recommendations.monitoring_schedule?.length > 0 && (
+        <div className="border border-zinc-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold mb-4">Monitoring Schedule</h2>
+          <div className="space-y-3">
+            {treatment_recommendations.monitoring_schedule.map((item: any, i: number) => (
+              <div key={i} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-700">{item.assessment}</span>
+                  <span className="text-xs text-gray-500 block">Priority: {item.priority}</span>
+                </div>
+                <span className="text-sm text-blue-600 font-medium">Every {item.frequency}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Clinical Trials */}
+      {treatment_recommendations.clinical_trials?.length > 0 && (
+        <div className="border border-zinc-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold mb-4">Clinical Trial Opportunities</h2>
+          <div className="space-y-3">
+            {treatment_recommendations.clinical_trials.map((trial: any, i: number) => (
+              <div key={i} className="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg">
+                <div className="w-2 h-2 bg-purple-600 rounded-full mt-2 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <span className="text-sm text-gray-700 block">{trial.consideration}</span>
+                  {trial.rationale && (
+                    <span className="text-xs text-gray-500">{trial.rationale}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Confidence Scores */}
+      {treatment_recommendations.confidence_scores && (
+        <div className="border border-zinc-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold mb-4">Recommendation Confidence</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Object.entries(treatment_recommendations.confidence_scores).map(([category, score]: [string, any]) => (
+              <div key={category} className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {Math.round(score * 100)}%
+                </div>
+                <div className="text-xs text-gray-500 capitalize">
+                  {category.replace('_', ' ')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

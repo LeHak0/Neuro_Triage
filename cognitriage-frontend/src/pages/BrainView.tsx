@@ -1,12 +1,17 @@
-import React from 'react';
+// React import removed - not needed for this component
 import BrainVisualization from '../components/BrainVisualization';
+import { useAppContext } from '../context/AppContext';
 
 export default function BrainView() {
-  // This will eventually get data from context or props
-  const mockData = {
-    slices: {},
-    volumes: null,
-    qualityMetrics: null
+  const { analysisResult } = useAppContext();
+  const { result } = analysisResult;
+  
+  // Get brain data from context or use empty fallback
+  const imagingFindings = result?.note?.imaging_findings || {};
+  const brainData = {
+    slices: imagingFindings.thumbnails || {},
+    volumes: imagingFindings,
+    qualityMetrics: imagingFindings.quality_metrics || {}
   };
 
   return (
@@ -20,9 +25,9 @@ export default function BrainView() {
 
       <div className="grid grid-cols-1 gap-6">
         <BrainVisualization
-          slices={mockData.slices}
-          volumes={mockData.volumes}
-          qualityMetrics={mockData.qualityMetrics}
+          slices={brainData.slices}
+          volumes={brainData.volumes}
+          qualityMetrics={brainData.qualityMetrics}
         />
       </div>
 

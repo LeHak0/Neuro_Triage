@@ -15,14 +15,20 @@ interface BrainVisualizationProps {
 export default function BrainVisualization({ slices, volumes, qualityMetrics }: BrainVisualizationProps) {
   const [activeView, setActiveView] = useState<'axial' | 'coronal' | 'sagittal'>('axial');
 
-  console.log('BrainVisualization props:', { slices, volumes, qualityMetrics });
-  console.log('Active view:', activeView);
-  console.log('Current slice data:', slices[activeView] ? 'Present' : 'Missing');
-
   // Check if we have any actual brain slice images (non-empty base64 strings)
   const hasSliceImages = !!slices && Object.values(slices).some(
     (slice) => typeof slice === 'string' && slice.trim().length > 0
   );
+
+  console.log('BrainVisualization props:', { slices, volumes, qualityMetrics });
+  console.log('Active view:', activeView);
+  console.log('Current slice data:', slices[activeView] ? 'Present' : 'Missing');
+  console.log('Slices object keys:', Object.keys(slices || {}));
+  console.log('hasSliceImages:', hasSliceImages);
+  if (slices && slices[activeView]) {
+    console.log(`${activeView} slice length:`, slices[activeView].length);
+    console.log(`${activeView} slice preview:`, slices[activeView].substring(0, 50) + '...');
+  }
 
   console.log('BrainVisualization volumes:', volumes);
 
@@ -102,20 +108,28 @@ export default function BrainVisualization({ slices, volumes, qualityMetrics }: 
           {/* Brain Image Viewer */}
           <div className="lg:col-span-2">
             <div className="relative bg-black rounded-lg overflow-hidden aspect-square">
-              {hasSliceImages && slices[activeView] ? (
+              {slices && slices[activeView] ? (
                 <img 
                   src={`data:image/png;base64,${slices[activeView]}`}
                   alt={`Brain ${activeView} view`}
                   className="w-full h-full object-contain"
+                  onError={(e) => {
+                    console.error('Image failed to load:', e);
+                    console.log('Image src length:', slices[activeView]?.length);
+                  }}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-400">
                   <div className="text-center">
                     <div className="text-4xl mb-2">🧠</div>
-                    <div className="text-white mb-2">Brain Analysis Complete</div>
-                    <div className="text-sm text-gray-300">Volume measurements extracted</div>
+                    <div className="text-white mb-2">
+                      {slices ? 'Loading brain slice...' : 'No brain data'}
+                    </div>
+                    <div className="text-sm text-gray-300">
+                      Active view: {activeView}
+                    </div>
                     <div className="text-xs text-gray-400 mt-2">
-                      {hasSliceImages ? 'Slice images processing...' : 'Using volumetric analysis'}
+                      Available views: {slices ? Object.keys(slices).join(', ') : 'none'}
                     </div>
                   </div>
                 </div>

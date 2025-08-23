@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useAppContext } from '../context/AppContext';
 
 interface Trial {
   nct_id: string;
@@ -13,9 +14,18 @@ interface Trial {
 }
 
 export default function Trials() {
+  const { analysisResult } = useAppContext();
+  const { result } = analysisResult;
   const [trials, setTrials] = useState<Trial[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Load trials from analysis result if available
+  useEffect(() => {
+    if (result?.trials && Array.isArray(result.trials)) {
+      setTrials(result.trials);
+    }
+  }, [result]);
 
   const searchTrials = async () => {
     setLoading(true);
@@ -110,18 +120,48 @@ export default function Trials() {
           </div>
 
           <div className="border border-zinc-200 rounded-lg p-4 mt-4">
-            <h3 className="text-lg font-semibold mb-3">PubMed Research</h3>
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
-                📚 Latest Publications
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                🔬 Clinical Guidelines
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                📊 Meta-Analyses
-              </Button>
-            </div>
+            <h3 className="text-lg font-semibold mb-3">Citations and Guidelines</h3>
+            {result?.citations && result.citations.length > 0 ? (
+              <div className="space-y-3">
+                {result.citations.slice(0, 3).map((citation: any, i: number) => (
+                  <div key={i} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
+                        {citation.title}
+                      </h4>
+                      <span className={`px-2 py-1 text-xs rounded-full ml-2 flex-shrink-0 ${
+                        citation.strength === 'high' ? 'bg-green-100 text-green-800' :
+                        citation.strength === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {citation.strength}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2">{citation.source}</p>
+                    <a
+                      href={citation.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                    >
+                      View source →
+                    </a>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  📚 Latest Publications
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  🔬 Clinical Guidelines
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  📊 Meta-Analyses
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 

@@ -17,6 +17,7 @@ import hashlib
 import time
 from Bio import Entrez
 from .neuroimaging import process_uploaded_nifti
+from .agents.treatment_recommendation import treatment_recommendation_agent
 
 app = FastAPI()
 
@@ -764,6 +765,7 @@ async def demo_submit(background_tasks: BackgroundTasks):
                     "Risk_Stratification_Agent": {"status": "pending"},
                     "Evidence_RAG_Agent": {"status": "pending"},
                     "Clinical_Trials_Agent": {"status": "pending"},
+                    "Treatment_Recommendation_Agent": {"status": "pending"},
                     "Clinical_Note_Agent": {"status": "pending"},
                     "Safety_Compliance_Agent": {"status": "pending"},
                 }
@@ -827,7 +829,22 @@ async def demo_submit(background_tasks: BackgroundTasks):
                 trials = loop.run_until_complete(get_trials_for_patient(patient_data))
                 loop.close()
                 jobs[job_id]["agents"]["Clinical_Trials_Agent"] = {"status": "done", "output": trials}
-                jobs[job_id]["progress"] = 75
+                jobs[job_id]["progress"] = 70
+
+                # Treatment Recommendation Agent
+                jobs[job_id]["agents"]["Treatment_Recommendation_Agent"]["status"] = "running"
+                treatment_recs = treatment_recommendation_agent(
+                    risk_tier=risk["risk_tier"],
+                    imaging_findings=feats,
+                    evidence=evidence,
+                    patient_info={
+                        "age": int(demo_meta.get("age", 70)),
+                        "sex": demo_meta.get("sex", "U"),
+                        "moca_total": int(demo_moca["total"])
+                    }
+                )
+                jobs[job_id]["agents"]["Treatment_Recommendation_Agent"] = {"status": "done", "output": treatment_recs}
+                jobs[job_id]["progress"] = 80
 
                 # Clinical Note Agent
                 jobs[job_id]["agents"]["Clinical_Note_Agent"]["status"] = "running"
@@ -847,6 +864,7 @@ async def demo_submit(background_tasks: BackgroundTasks):
                     "note": safety["safety_approved_note"],
                     "citations": evidence.get("citations", []),
                     "trials": trials,
+                    "treatment_recommendations": treatment_recs,
                     "qc": ingest.get("qc_report", {}),
                     "search_info": {
                         "search_type": evidence.get("search_type", "unknown"),
@@ -914,6 +932,7 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                     "Risk_Stratification_Agent": {"status": "pending"},
                     "Evidence_RAG_Agent": {"status": "pending"},
                     "Clinical_Trials_Agent": {"status": "pending"},
+                    "Treatment_Recommendation_Agent": {"status": "pending"},
                     "Clinical_Note_Agent": {"status": "pending"},
                     "Safety_Compliance_Agent": {"status": "pending"},
                 }
@@ -1000,7 +1019,22 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                 trials = loop.run_until_complete(get_trials_for_patient(patient_data))
                 loop.close()
                 jobs[job_id]["agents"]["Clinical_Trials_Agent"] = {"status": "done", "output": trials}
-                jobs[job_id]["progress"] = 75
+                jobs[job_id]["progress"] = 70
+
+                # Treatment Recommendation Agent
+                jobs[job_id]["agents"]["Treatment_Recommendation_Agent"]["status"] = "running"
+                treatment_recs = treatment_recommendation_agent(
+                    risk_tier=risk["risk_tier"],
+                    imaging_findings=feats,
+                    evidence=evidence,
+                    patient_info={
+                        "age": int(demo_meta.get("age", 70)),
+                        "sex": demo_meta.get("sex", "U"),
+                        "moca_total": int(demo_moca["total"])
+                    }
+                )
+                jobs[job_id]["agents"]["Treatment_Recommendation_Agent"] = {"status": "done", "output": treatment_recs}
+                jobs[job_id]["progress"] = 80
 
                 # Clinical Note Agent
                 jobs[job_id]["agents"]["Clinical_Note_Agent"]["status"] = "running"
@@ -1028,6 +1062,7 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                     "note": safety["safety_approved_note"],
                     "citations": evidence["citations"],
                     "trials": trials,
+                    "treatment_recommendations": treatment_recs,
                     "qc": ingest["qc_report"],
                     "search_info": {
                         "search_type": evidence.get("search_type", "unknown"),
@@ -1071,6 +1106,7 @@ async def submit(
         "Risk_Stratification_Agent",
         "Evidence_RAG_Agent",
         "Clinical_Trials_Agent",
+        "Treatment_Recommendation_Agent",
         "Clinical_Note_Agent",
         "Safety_Compliance_Agent",
     ]
@@ -1120,7 +1156,22 @@ async def submit(
             trials = loop.run_until_complete(get_trials_for_patient(patient_data))
             loop.close()
             jobs[job_id]["agents"]["Clinical_Trials_Agent"] = {"status": "done", "output": trials}
-            jobs[job_id]["progress"] = 75
+            jobs[job_id]["progress"] = 70
+
+            # Treatment Recommendation Agent
+            jobs[job_id]["agents"]["Treatment_Recommendation_Agent"]["status"] = "running"
+            treatment_recs = treatment_recommendation_agent(
+                risk_tier=risk["risk_tier"],
+                imaging_findings=feats,
+                evidence=evidence,
+                patient_info={
+                    "age": int(meta_obj.get("age", 70)),
+                    "sex": meta_obj.get("sex", "U"),
+                    "moca_total": int(moca_obj["total"])
+                }
+            )
+            jobs[job_id]["agents"]["Treatment_Recommendation_Agent"] = {"status": "done", "output": treatment_recs}
+            jobs[job_id]["progress"] = 80
 
             # Clinical Note Agent
             jobs[job_id]["agents"]["Clinical_Note_Agent"]["status"] = "running"
@@ -1147,7 +1198,8 @@ async def submit(
                 "triage": safety["risk_adjusted"],
                 "note": safety["safety_approved_note"],
                 "citations": evidence["citations"],
-                "trials": trials,  # <-- added trials to final result
+                "trials": trials,
+                "treatment_recommendations": treatment_recs,
                 "qc": ingest["qc_report"],
                 "search_info": {
                     "search_type": evidence.get("search_type", "unknown"),
