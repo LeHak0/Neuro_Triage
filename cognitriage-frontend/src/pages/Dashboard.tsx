@@ -1,0 +1,524 @@
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { getStatus, getResult, type StatusResponse, type ResultResponse, type RiskTier } from "../lib/api"
+import { Button } from "@/components/ui/button"
+import BrainVisualization from '../components/BrainVisualization';
+
+function riskColor(tier?: RiskTier) {
+  switch (tier) {
+    case "LOW":
+      return "bg-green-100 text-green-800 border-green-300"
+    case "MODERATE":
+      return "bg-yellow-100 text-yellow-800 border-yellow-300"
+    case "HIGH":
+      return "bg-orange-100 text-orange-800 border-orange-300"
+    case "URGENT":
+      return "bg-red-100 text-red-800 border-red-300"
+    default:
+      return "bg-zinc-100 text-zinc-800 border-zinc-300"
+  }
+}
+
+export default function Dashboard() {
+  const [files, setFiles] = useState<File[]>([])
+  const [dragOver, setDragOver] = useState(false)
+  const [moca, setMoca] = useState<number | "">("")
+  const [age, setAge] = useState<number | "">("")
+  const [sex, setSex] = useState("F")
+
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [status, setStatus] = useState<StatusResponse | null>(null)
+  const [result, setResult] = useState<ResultResponse | null>(null)
+  const pollRef = useRef<number | null>(null)
+
+  const useDemoCase = async () => {
+    setMoca(24)
+    setAge(72)
+    setSex("M")
+    setFiles([])
+    setJobId(null)
+    setStatus(null)
+    setResult(null)
+    
+    try {
+      // Use the new demo endpoint with real NIFTI processing
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/demo-submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Demo submission failed: ${response.statusText}`)
+      }
+      
+      const result = await response.json()
+      setJobId(result.job_id)
+    } catch (e) {
+      alert(`Demo error: ${(e as Error).message}`)
+    }
+  }
+
+  const usePathologyDemo = async () => {
+    setMoca(19)
+    setAge(78)
+    setSex("F")
+    setFiles([])
+    setJobId(null)
+    setStatus(null)
+    setResult(null)
+    
+    try {
+      // Use the pathology demo endpoint
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/demo-pathology`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Pathology demo submission failed: ${response.statusText}`)
+      }
+      
+      const result = await response.json()
+      setJobId(result.job_id)
+    } catch (e) {
+      alert(`Pathology demo error: ${(e as Error).message}`)
+    }
+  }
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const incoming: File[] = []
+    for (let i = 0; i < e.dataTransfer.files.length; i++) {
+      incoming.push(e.dataTransfer.files[i])
+    }
+    setFiles((prev) => [...prev, ...incoming])
+  }, [])
+
+  const onSelectFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    const incoming: File[] = []
+    for (let i = 0; i < e.target.files.length; i++) incoming.push(e.target.files[i])
+    setFiles((prev) => [...prev, ...incoming])
+  }, [])
+
+  const removeFile = (idx: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  const canSubmit = useMemo(() => {
+    // Allow submission if at least one file is present and any provided values are valid
+    const hasFiles = files.length > 0
+    const mocaValid = typeof moca === "number" ? moca >= 0 && moca <= 30 : true
+    const ageValid = typeof age === "number" ? age > 0 : true
+    return hasFiles && mocaValid && ageValid
+  }, [files, moca, age])
+
+  const startSubmit = async () => {
+    if (!canSubmit) return
+    setJobId(null)
+    setStatus(null)
+    setResult(null)
+    try {
+      // Use sensible defaults if user didn't provide MoCA/Age
+      const mocaVal = typeof moca === "number" ? moca : 24
+      const ageVal = typeof age === "number" ? age : 70
+      const API = (import.meta as any).env.VITE_API_URL || 'http://127.0.0.1:8000'
+      const fd = new FormData()
+      files.forEach(f => fd.append('files', f))
+      fd.append('moca', JSON.stringify({ total: Number(mocaVal) }))
+      fd.append('meta', JSON.stringify({ age: Number(ageVal), sex }))
+
+      const resp = await fetch(`${API}/api/submit`, {
+        method: 'POST',
+        body: fd,
+      })
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '')
+        throw new Error(text || `Submit failed: ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      setJobId(data.job_id)
+    } catch (e) {
+      alert(`Submit error: ${(e as Error).message}`)
+    }
+  }
+
+  useEffect(() => {
+    if (!jobId) return
+    const poll = async () => {
+      try {
+        const st = await getStatus(jobId)
+        setStatus(st)
+        if (st.status === "completed" || st.status === "failed") {
+          const rs = await getResult(jobId)
+          setResult(rs)
+          if (pollRef.current) window.clearInterval(pollRef.current)
+          pollRef.current = null
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    poll()
+    const id = window.setInterval(poll, 1200)
+    pollRef.current = id
+    return () => {
+      if (pollRef.current) window.clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }, [jobId])
+
+  const triage = result?.result?.triage
+  const citations = result?.result?.citations ?? []
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* upload_zone */}
+        <section className="lg:col-span-8 border border-zinc-200 rounded-lg p-4" aria-labelledby="upload-heading">
+          <h2 id="upload-heading" className="text-base font-semibold mb-3">
+            Upload and Patient Info
+          </h2>
+          <div
+            onDragOver={(e) => {
+              e.preventDefault()
+              setDragOver(true)
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            className={`w-full border-2 border-dashed rounded-md p-4 text-sm ${
+              dragOver ? "border-zinc-800 bg-zinc-50" : "border-zinc-300"
+            }`}
+            role="region"
+            aria-label="MRI drag and drop"
+          >
+            <p className="mb-2">
+              Drag and drop MRI files (NIfTI .nii/.nii.gz or DICOM) here, or select files
+            </p>
+            <input
+              aria-label="Select MRI files"
+              type="file"
+              multiple
+              onChange={onSelectFiles}
+              className="block w-full text-sm"
+            />
+            {files.length > 0 && (
+              <ul className="mt-3 max-h-28 overflow-auto text-xs">
+                {files.map((f, i) => (
+                  <li key={i} className="flex items-center justify-between py-1">
+                    <span className="truncate">{f.name}</span>
+                    <Button variant="ghost" size="sm" onClick={() => removeFile(i)} aria-label={`Remove ${f.name}`}>
+                      Remove
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="col-span-1">
+              <label className="text-sm font-medium">MoCA total (0-30)</label>
+              <input
+                type="number"
+                min={0}
+                max={30}
+                value={moca}
+                onChange={(e) => setMoca(e.target.value === "" ? "" : Number(e.target.value))}
+                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                aria-label="MoCA total score"
+              />
+            </div>
+            <div className="col-span-1">
+              <label className="text-sm font-medium">Age</label>
+              <input
+                type="number"
+                min={1}
+                value={age}
+                onChange={(e) => setAge(e.target.value === "" ? "" : Number(e.target.value))}
+                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                aria-label="Patient age"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="text-sm font-medium">Sex</label>
+              <select
+                value={sex}
+                onChange={(e) => setSex(e.target.value)}
+                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                aria-label="Patient sex"
+              >
+                <option value="F">Female</option>
+                <option value="M">Male</option>
+                <option value="U">Unspecified</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="outline" onClick={useDemoCase} aria-label="Use healthy demo case" className="whitespace-nowrap">
+              Use Demo Case (Healthy)
+            </Button>
+            <Button variant="outline" onClick={usePathologyDemo} aria-label="Use pathology demo case" className="bg-red-50 hover:bg-red-100 text-red-700 border-red-300 whitespace-nowrap">
+              Use Pathology Demo
+            </Button>
+            <Button onClick={startSubmit} disabled={!canSubmit} aria-label="Start analysis" className="whitespace-nowrap">
+              Start Analysis
+            </Button>
+            {jobId && (
+              <span className="text-xs text-zinc-600 truncate max-w-[160px]" aria-live="polite">
+                Job: {jobId.slice(0, 8)}…
+              </span>
+            )}
+          </div>
+
+          {status && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between text-sm">
+                <span>Status: {status.status}</span>
+                <span>{status.progress}%</span>
+              </div>
+              <div className="mt-2 h-2 w-full rounded bg-zinc-200">
+                <div
+                  className="h-2 rounded bg-zinc-800 transition-all"
+                  style={{ width: `${status.progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* triage_card */}
+        <section className="lg:col-span-4 border border-zinc-200 rounded-lg p-4" aria-labelledby="triage-heading">
+          <h2 id="triage-heading" className="text-base font-semibold mb-3">
+            Triage
+          </h2>
+          <div className={`rounded-md border p-4 ${riskColor(triage?.risk_tier as RiskTier | undefined)}`}>
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">Risk Tier</div>
+              <div className="text-2xl font-bold">{triage?.risk_tier ?? "-"}</div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <div className="text-zinc-600">Confidence</div>
+                <div className="font-semibold">{triage?.confidence_score != null ? `${Math.round(triage.confidence_score * 100)}%` : "-"}</div>
+              </div>
+              <div>
+                <div className="text-zinc-600">Key Rationale</div>
+                <ul className="list-disc pl-5">
+                  {(triage?.key_rationale ?? []).map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* Brain Visualization Panel */}
+      <section className="mb-6">
+        {result?.result?.note?.imaging_findings ? (
+          <>
+            {console.log('Rendering BrainVisualization with:', result.result.note.imaging_findings)}
+            <BrainVisualization
+              slices={result.result.note.imaging_findings.thumbnails || {}}
+              volumes={result.result.note.imaging_findings}
+              qualityMetrics={result.result.note.imaging_findings.quality_metrics}
+            />
+          </>
+        ) : result?.result ? (
+          <div className="border border-zinc-200 rounded-lg p-8 text-center">
+            <div className="text-4xl mb-4">🧠</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Brain Imaging Analysis</h3>
+            <p className="text-sm text-zinc-600">Processing completed but no imaging data available.</p>
+          </div>
+        ) : (
+          <div className="border border-zinc-200 rounded-lg p-8 text-center">
+            <div className="text-4xl mb-4">🧠</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Brain Imaging Analysis</h3>
+            <p className="text-sm text-zinc-600">Upload NIFTI files and start analysis to view interactive brain visualization.</p>
+          </div>
+        )}
+      </section>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* evidence_panel */}
+        <section className="border border-zinc-200 rounded-lg p-4" aria-labelledby="evidence-heading">
+          <h2 id="evidence-heading" className="text-base font-semibold mb-3">
+            Imaging Evidence
+          </h2>
+          {result?.result ? (
+            <div className="text-sm">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="border rounded p-3">
+                  <div className="text-zinc-600">Left hippocampus (ml)</div>
+                  <div className="text-xl font-semibold">{result.result.note.imaging_findings.hippocampal_volumes_ml.left_ml}</div>
+                </div>
+                <div className="border rounded p-3">
+                  <div className="text-zinc-600">Right hippocampus (ml)</div>
+                  <div className="text-xl font-semibold">{result.result.note.imaging_findings.hippocampal_volumes_ml.right_ml}</div>
+                </div>
+                <div className="border rounded p-3">
+                  <div className="text-zinc-600">MTA score</div>
+                  <div className="text-xl font-semibold">{result.result.note.imaging_findings.mta_score}</div>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="border rounded p-3">
+                  <div className="text-zinc-600">Left percentile</div>
+                  <div className="text-lg font-semibold">{result.result.note.imaging_findings.percentiles.left_pct}th</div>
+                </div>
+                <div className="border rounded p-3">
+                  <div className="text-zinc-600">Right percentile</div>
+                  <div className="text-lg font-semibold">{result.result.note.imaging_findings.percentiles.right_pct}th</div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-600">Upload data and start analysis to view imaging findings.</p>
+          )}
+        </section>
+
+        {/* citations_panel */}
+        <section className="border border-zinc-200 rounded-lg p-4" aria-labelledby="citations-heading">
+          <h2 id="citations-heading" className="text-base font-semibold mb-3">
+            Citations and Guidelines
+          </h2>
+          {citations.length > 0 ? (
+            <ul className="space-y-2">
+              {citations.map((c, i) => (
+                <li key={i} className="border rounded p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{c.title}</div>
+                    <span className="text-xs px-2 py-1 rounded border bg-zinc-50">{c.strength}</span>
+                  </div>
+                  <div className="text-sm text-zinc-600">{c.source}</div>
+                  <a className="text-sm text-blue-700 underline" href={c.link} target="_blank" rel="noreferrer">
+                    View source
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-zinc-600">Relevant citations will appear after processing.</p>
+          )}
+        </section>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* clinical_trials_panel */}
+        <section className="border border-zinc-200 rounded-lg p-4" aria-labelledby="trials-heading">
+          <h2 id="trials-heading" className="text-base font-semibold mb-3">
+            Clinical Trials
+          </h2>
+          {result?.result?.trials && result.result.trials.length > 0 ? (
+            <div className="space-y-3">
+              {result.result.trials.map((trial: any, i: number) => (
+                <div key={i} className="border rounded p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="font-medium text-sm">{trial.title}</div>
+                    <span className="text-xs px-2 py-1 rounded border bg-green-50 border-green-200 text-green-800">
+                      {trial.status}
+                    </span>
+                  </div>
+                  <div className="text-xs text-zinc-600 mb-2">
+                    NCT ID: {trial.nct_id}
+                  </div>
+                  <div className="text-sm text-zinc-700 mb-2">
+                    {trial.summary}
+                  </div>
+                  <div className="text-xs text-zinc-500 mb-2">
+                    Locations: {Array.isArray(trial.locations) ? trial.locations.join(', ') : 'Multiple locations available'}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-zinc-500">
+                      Match: {trial.match_reason}
+                    </span>
+                    <a 
+                      className="text-xs text-blue-700 underline" 
+                      href={trial.url} 
+                      target="_blank" 
+                      rel="noreferrer"
+                    >
+                      View on ClinicalTrials.gov
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-600">
+              {result?.result ? 'No matching clinical trials found.' : 'Clinical trials will appear after processing.'}
+            </p>
+          )}
+        </section>
+        
+        {/* clinical_note */}
+        <section className="border border-zinc-200 rounded-lg p-4" aria-labelledby="note-heading">
+          <h2 id="note-heading" className="text-base font-semibold mb-3">
+            Structured Clinical Note
+          </h2>
+          {result?.result ? (
+            <div className="text-sm space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="border rounded p-3">
+                  <div className="text-zinc-600">Patient</div>
+                  <div className="font-medium">
+                    {result.result.note.patient_info.age}y, {result.result.note.patient_info.sex}
+                  </div>
+                </div>
+                <div className="border rounded p-3">
+                  <div className="text-zinc-600">MoCA total</div>
+                  <div className="font-medium">{result.result.note.patient_info.moca_total}</div>
+                </div>
+              </div>
+
+              <div className="border rounded p-3">
+                <div className="text-zinc-600 mb-1">Recommendations</div>
+                <ul className="list-disc pl-5">
+                  {result.result.note.recommendations.map((r: string, i: number) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="border rounded p-3">
+                <div className="text-zinc-600 mb-1">Limitations and Disclaimers</div>
+                <ul className="list-disc pl-5">
+                  {result.result.note.limitations.map((r: string, i: number) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                  <li>Not for diagnostic use without physician oversight</li>
+                  <li>Supplemental tool for clinical decision making</li>
+                  <li>Results require medical interpretation</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={() => window.print()}>Download PDF</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const n = result?.result?.note
+                    if (!n) return
+                    const text = JSON.stringify(n, null, 2)
+                    navigator.clipboard.writeText(text)
+                  }}
+                >
+                  Copy Note JSON
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-600">The structured note will appear here after processing completes.</p>
+          )}
+        </section>
+      </div>
+    </div>
+  )
+}
