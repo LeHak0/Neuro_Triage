@@ -7,8 +7,7 @@ import {
   BookOpen, 
   Star, 
   Mail, 
-  Trash2, 
-  Eye, 
+  Trash2,  
   FileText, 
   Building2, 
   Lightbulb, 
@@ -39,7 +38,6 @@ export default function Trials() {
   const { result } = analysisResult;
   const [trials, setTrials] = useState<Trial[]>([]);
   const [loading, setLoading] = useState(false);
-  const [expandedTrial, setExpandedTrial] = useState<string | null>(null);
   const [savedTrials, setSavedTrials] = useState<Set<string>>(new Set());
   const [showToast, setShowToast] = useState<Toast | null>(null);
 
