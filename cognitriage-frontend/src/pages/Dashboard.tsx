@@ -1,25 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-// import { getStatus, getResult, type RiskTier } from "../lib/api"
 import { Button } from "@/components/ui/button"
-import BrainVisualization from '../components/BrainVisualization';
 import { useAppContext } from '../context/AppContext';
-
-type RiskTier = "LOW" | "MODERATE" | "HIGH" | "CRITICAL";
-
-function riskColor(tier?: RiskTier) {
-  switch (tier) {
-    case "LOW":
-      return "bg-green-100 text-green-800 border-green-300"
-    case "MODERATE":
-      return "bg-yellow-100 text-yellow-800 border-yellow-300"
-    case "HIGH":
-      return "bg-orange-100 text-orange-800 border-orange-300"
-    case "URGENT":
-      return "bg-red-100 text-red-800 border-red-300"
-    default:
-      return "bg-zinc-100 text-zinc-800 border-zinc-300"
-  }
-}
 
 export default function Dashboard() {
   const { patientData, setPatientData, analysisResult, setAnalysisResult } = useAppContext();
@@ -28,7 +9,7 @@ export default function Dashboard() {
 
   // Extract values from context
   const { files, moca, age, sex } = patientData;
-  const { jobId, status, result } = analysisResult;
+  const { jobId, status } = analysisResult;
 
   const useDemoCase = async () => {
     setPatientData({ moca: 24, age: 72, sex: "M", files: [] })
@@ -187,7 +168,7 @@ export default function Dashboard() {
         pollRef.current = null
       }
     }
-  }, [jobId, setAnalysisResult])
+  }, [jobId])
 
   return (
     <div className="space-y-6">
@@ -317,61 +298,10 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        {/* Results Section */}
+        {/* Progress Section - Only show during processing */}
         <div className="space-y-4">
-          {/* Triage Card */}
-          {result?.triage && (
-            <div className="border border-zinc-200 rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">Triage Assessment</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Risk Tier</span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${riskColor(result.triage.risk_tier)}`}>
-                    {result.triage.risk_tier}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Confidence</span>
-                  <span className="text-sm font-medium">
-                    {Math.round((result.triage.confidence_score || 0) * 100)}%
-                  </span>
-                </div>
-                {result.triage.key_rationale && (
-                  <div>
-                    <span className="text-sm text-gray-600 block mb-2">Key Findings:</span>
-                    <ul className="text-sm space-y-1">
-                      {result.triage.key_rationale.map((item: string, i: number) => (
-                        <li key={i} className="flex items-start">
-                          <span className="text-blue-600 mr-2">•</span>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Brain Visualization - Force Show */}
-          {result?.note?.imaging_findings && (
-            <div className="border border-zinc-200 rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">Brain Analysis</h2>
-              <div style={{ backgroundColor: '#f8f9fa', padding: '10px', marginBottom: '10px', fontSize: '12px' }}>
-                DEBUG: Has thumbnails = {!!result.note.imaging_findings.thumbnails}<br/>
-                Thumbnails keys = {result.note.imaging_findings.thumbnails ? Object.keys(result.note.imaging_findings.thumbnails).join(', ') : 'none'}<br/>
-                Axial data length = {result.note.imaging_findings.thumbnails?.axial?.length || 'none'}
-              </div>
-              <BrainVisualization 
-                slices={result.note.imaging_findings.thumbnails || { axial: '', coronal: '', sagittal: '' }}
-                volumes={result.note.imaging_findings}
-                qualityMetrics={result.note.imaging_findings.quality_metrics || {}}
-              />
-            </div>
-          )}
-
           {/* Progress */}
-          {status && (
+          {status && status.status !== 'completed' && (
             <div className="border border-zinc-200 rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">Analysis Progress</h2>
               <div className="space-y-2">
@@ -389,6 +319,22 @@ export default function Dashboard() {
                   Status: {status.status}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Analysis Complete Message */}
+          {status && status.status === 'completed' && (
+            <div className="border border-green-200 rounded-lg p-6 bg-green-50">
+              <h2 className="text-lg font-semibold mb-2 text-green-800">Analysis Complete</h2>
+              <p className="text-sm text-green-700 mb-4">
+                Your cognitive assessment has been completed successfully. View detailed results in the Results tab.
+              </p>
+              <Button 
+                onClick={() => window.location.hash = '#results'}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                View Results →
+              </Button>
             </div>
           )}
         </div>

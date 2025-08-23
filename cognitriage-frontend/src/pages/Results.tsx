@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { useAppContext } from '../context/AppContext';
-import BrainVisualization from '../components/BrainVisualization';
 
 export default function Results() {
   const { analysisResult } = useAppContext();
@@ -76,64 +75,7 @@ export default function Results() {
       </div>
 
       {/* Detailed Results */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Imaging Findings */}
-        <div className="border border-zinc-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">Imaging Findings</h2>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <div className="text-sm text-gray-600">Left Hippocampus</div>
-                <div className="text-xl font-bold text-blue-700">
-                  {imagingFindings.hippocampal_volumes_ml?.left_ml || 'N/A'} ml
-                </div>
-                <div className="text-xs text-gray-500">
-                  {imagingFindings.percentiles?.left_pct || 'N/A'}th percentile
-                </div>
-              </div>
-              
-              <div className="p-3 bg-green-50 rounded-lg">
-                <div className="text-sm text-gray-600">Right Hippocampus</div>
-                <div className="text-xl font-bold text-green-700">
-                  {imagingFindings.hippocampal_volumes_ml?.right_ml || 'N/A'} ml
-                </div>
-                <div className="text-xs text-gray-500">
-                  {imagingFindings.percentiles?.right_pct || 'N/A'}th percentile
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600">Asymmetry</div>
-                <div className="text-lg font-semibold">
-                  {imagingFindings.hippocampal_volumes_ml?.asymmetry_ml || 'N/A'} ml
-                </div>
-              </div>
-              
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600">MTA Score</div>
-                <div className="text-lg font-semibold">
-                  {imagingFindings.mta_score !== undefined ? imagingFindings.mta_score : 'N/A'}/4
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Brain Visualization */}
-          {imagingFindings.thumbnails && (
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Brain Slices</h3>
-              <BrainVisualization 
-                slices={imagingFindings.thumbnails}
-                volumes={imagingFindings}
-                qualityMetrics={imagingFindings.quality_metrics || {}}
-              />
-            </div>
-          )}
-        </div>
-
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         {/* Risk Analysis */}
         <div className="border border-zinc-200 rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4">Risk Analysis</h2>
