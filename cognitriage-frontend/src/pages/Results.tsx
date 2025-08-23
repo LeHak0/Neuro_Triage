@@ -7,42 +7,6 @@ export default function Results() {
   const navigate = useNavigate();
   const { result } = analysisResult;
 
-  const handleExportPDF = () => {
-    // Generate PDF content
-    const printContent = document.createElement('div');
-    printContent.innerHTML = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h1>Cognitive Assessment Results</h1>
-        <div style="margin: 20px 0;">
-          <h2>Patient Information</h2>
-          <p>Age: ${result?.note?.patient_info?.age || 'N/A'}</p>
-          <p>Sex: ${result?.note?.patient_info?.sex || 'N/A'}</p>
-          <p>MoCA Score: ${result?.note?.patient_info?.moca_total || 'N/A'}/30</p>
-        </div>
-        <div style="margin: 20px 0;">
-          <h2>Risk Assessment</h2>
-          <p>Risk Tier: ${result?.triage?.risk_tier || 'N/A'}</p>
-          <p>Confidence: ${Math.round((result?.triage?.confidence_score || 0) * 100)}%</p>
-        </div>
-        <div style="margin: 20px 0;">
-          <h2>Imaging Findings</h2>
-          <p>Left Hippocampus: ${result?.note?.imaging_findings?.hippocampal_volumes_ml?.left_ml || 'N/A'} ml</p>
-          <p>Right Hippocampus: ${result?.note?.imaging_findings?.hippocampal_volumes_ml?.right_ml || 'N/A'} ml</p>
-          <p>MTA Score: ${result?.note?.imaging_findings?.mta_score || 'N/A'}/4</p>
-        </div>
-        <div style="margin: 20px 0;">
-          <p><small>Generated on ${new Date().toLocaleDateString()}</small></p>
-        </div>
-      </div>
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(printContent.innerHTML);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
 
   const handleShareResults = () => {
     const shareData = {
@@ -95,7 +59,6 @@ export default function Results() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Analysis Results</h1>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleExportPDF}>📄 Export PDF</Button>
           <Button variant="outline" onClick={handleShareResults}>📧 Share Results</Button>
         </div>
       </div>
@@ -202,81 +165,41 @@ export default function Results() {
         </div>
       </div>
 
-      {/* Processing Timeline */}
-      <div className="border border-zinc-200 rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-4">Processing Timeline</h2>
-        
-        <div className="space-y-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-            </div>
-            <div className="flex-1">
-              <div className="font-medium text-sm">File Upload & QC</div>
-              <div className="text-xs text-gray-500">Completed • 2 files processed</div>
-            </div>
-            <div className="text-xs text-gray-400">00:15</div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-            </div>
-            <div className="flex-1">
-              <div className="font-medium text-sm">Brain Segmentation</div>
-              <div className="text-xs text-gray-500">Completed • Hippocampal volumes extracted</div>
-            </div>
-            <div className="text-xs text-gray-400">01:23</div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-            </div>
-            <div className="flex-1">
-              <div className="font-medium text-sm">Risk Stratification</div>
-              <div className="text-xs text-gray-500">Completed • Risk tier assigned</div>
-            </div>
-            <div className="text-xs text-gray-400">01:45</div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-            </div>
-            <div className="flex-1">
-              <div className="font-medium text-sm">Evidence Synthesis</div>
-              <div className="text-xs text-gray-500">Completed • 5 citations found</div>
-            </div>
-            <div className="text-xs text-gray-400">02:10</div>
-          </div>
-        </div>
-      </div>
-
       {/* Quality Metrics */}
-      <div className="border border-zinc-200 rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-4">Quality Metrics</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-green-50 rounded-lg">
-            <div className="text-sm text-gray-600 mb-1">Image Quality</div>
-            <div className="text-lg font-semibold text-green-700">Good</div>
-            <div className="text-xs text-gray-500">SNR: 24.3</div>
-          </div>
+      {imagingFindings.quality_metrics && Object.keys(imagingFindings.quality_metrics).length > 0 && (
+        <div className="border border-zinc-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold mb-4">Quality Metrics</h2>
           
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <div className="text-sm text-gray-600 mb-1">Processing Confidence</div>
-            <div className="text-lg font-semibold text-blue-700">High</div>
-            <div className="text-xs text-gray-500">95% reliability</div>
-          </div>
-          
-          <div className="p-4 bg-purple-50 rounded-lg">
-            <div className="text-sm text-gray-600 mb-1">Data Completeness</div>
-            <div className="text-lg font-semibold text-purple-700">Complete</div>
-            <div className="text-xs text-gray-500">All metrics available</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {imagingFindings.quality_metrics.snr && (
+              <div className="p-4 bg-green-50 rounded-lg">
+                <div className="text-sm text-gray-600 mb-1">Signal-to-Noise Ratio</div>
+                <div className="text-lg font-semibold text-green-700">{imagingFindings.quality_metrics.snr.toFixed(1)}</div>
+                <div className="text-xs text-gray-500">Higher is better</div>
+              </div>
+            )}
+            
+            {triage.confidence_score && (
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="text-sm text-gray-600 mb-1">Analysis Confidence</div>
+                <div className="text-lg font-semibold text-blue-700">{Math.round(triage.confidence_score * 100)}%</div>
+                <div className="text-xs text-gray-500">Model certainty</div>
+              </div>
+            )}
+            
+            {imagingFindings.quality_metrics.completeness !== undefined && (
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <div className="text-sm text-gray-600 mb-1">Data Quality</div>
+                <div className="text-lg font-semibold text-purple-700">
+                  {imagingFindings.quality_metrics.completeness > 0.9 ? 'Excellent' : 
+                   imagingFindings.quality_metrics.completeness > 0.7 ? 'Good' : 'Fair'}
+                </div>
+                <div className="text-xs text-gray-500">{Math.round(imagingFindings.quality_metrics.completeness * 100)}% complete</div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -19,7 +19,7 @@ export default function BrainView() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Brain Visualization</h1>
         <div className="text-sm text-gray-500">
-          Interactive 3D brain analysis and slice viewing
+          Neuroimaging analysis and slice viewing
         </div>
       </div>
 
@@ -31,28 +31,101 @@ export default function BrainView() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="border border-zinc-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-3">Volume Analysis</h3>
-          <p className="text-sm text-zinc-600">
-            Detailed hippocampal and brain volume measurements will appear here after processing.
-          </p>
-        </div>
+      {/* Only show analysis tabs if we have analysis data */}
+      {result && imagingFindings && Object.keys(imagingFindings).length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Volume Analysis */}
+          <div className="border border-zinc-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-3">Volume Analysis</h3>
+            <div className="space-y-3">
+              {imagingFindings.hippocampal_volumes_ml && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Hippocampal Volumes (mL)</h4>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Left:</span>
+                      <span className="font-mono">{imagingFindings.hippocampal_volumes_ml.left?.toFixed(2) || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Right:</span>
+                      <span className="font-mono">{imagingFindings.hippocampal_volumes_ml.right?.toFixed(2) || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {imagingFindings.brain_volumes && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Brain Volumes (mL)</h4>
+                  <div className="space-y-1">
+                    {Object.entries(imagingFindings.brain_volumes).map(([region, volume]: [string, any]) => (
+                      <div key={region} className="flex justify-between text-sm">
+                        <span className="capitalize">{region.replace('_', ' ')}:</span>
+                        <span className="font-mono">{typeof volume === 'number' ? volume.toFixed(2) : volume}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-        <div className="border border-zinc-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-3">Quality Metrics</h3>
-          <p className="text-sm text-zinc-600">
-            Image quality assessment and signal-to-noise ratio analysis.
-          </p>
-        </div>
+          {/* Quality Metrics */}
+          <div className="border border-zinc-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-3">Quality Metrics</h3>
+            <div className="space-y-3">
+              {imagingFindings.mta_score !== undefined && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">MTA Score</h4>
+                  <div className="flex justify-between text-sm">
+                    <span>Medial Temporal Atrophy:</span>
+                    <span className={`font-mono ${imagingFindings.mta_score > 2 ? 'text-red-600' : imagingFindings.mta_score > 1 ? 'text-yellow-600' : 'text-green-600'}`}>
+                      {imagingFindings.mta_score}/4
+                    </span>
+                  </div>
+                </div>
+              )}
+              {imagingFindings.quality_metrics && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Image Quality</h4>
+                  <div className="space-y-1">
+                    {Object.entries(imagingFindings.quality_metrics).map(([metric, value]: [string, any]) => (
+                      <div key={metric} className="flex justify-between text-sm">
+                        <span className="capitalize">{metric.replace('_', ' ')}:</span>
+                        <span className="font-mono">{typeof value === 'number' ? value.toFixed(2) : value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-        <div className="border border-zinc-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-3">Comparison</h3>
-          <p className="text-sm text-zinc-600">
-            Age-matched normative comparisons and percentile rankings.
-          </p>
+          {/* Comparison */}
+          <div className="border border-zinc-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-3">Comparison</h3>
+            <div className="space-y-3">
+              {imagingFindings.percentiles && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Age-Matched Percentiles</h4>
+                  <div className="space-y-1">
+                    {Object.entries(imagingFindings.percentiles).map(([region, percentile]: [string, any]) => (
+                      <div key={region} className="flex justify-between text-sm">
+                        <span className="capitalize">{region.replace('_', ' ')}:</span>
+                        <span className={`font-mono ${percentile < 10 ? 'text-red-600' : percentile < 25 ? 'text-yellow-600' : 'text-green-600'}`}>
+                          {typeof percentile === 'number' ? `${percentile.toFixed(1)}%` : percentile}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="text-xs text-gray-500 mt-3">
+                <p>Percentiles below 10% may indicate atrophy. Values are compared to age-matched healthy controls.</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

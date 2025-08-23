@@ -255,7 +255,7 @@ export default function Dashboard() {
                   value={moca}
                   onChange={(e) => setPatientData({ moca: e.target.value ? Number(e.target.value) : "" })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  placeholder="24"
+                  placeholder="Enter score (0-30)"
                 />
               </div>
               <div>
@@ -264,12 +264,12 @@ export default function Dashboard() {
                 </label>
                 <input
                   type="number"
-                  min="1"
+                  min="18"
                   max="120"
                   value={age}
                   onChange={(e) => setPatientData({ age: e.target.value ? Number(e.target.value) : "" })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  placeholder="70"
+                  placeholder="Enter age"
                 />
               </div>
               <div>
