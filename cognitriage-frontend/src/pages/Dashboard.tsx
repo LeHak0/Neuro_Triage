@@ -1,9 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
 import { useAppContext } from '../context/AppContext';
 
 export default function Dashboard() {
   const { patientData, setPatientData, analysisResult, setAnalysisResult } = useAppContext();
+  const navigate = useNavigate();
   const [dragOver, setDragOver] = useState(false)
   const pollRef = useRef<number | null>(null)
 
@@ -327,14 +329,22 @@ export default function Dashboard() {
             <div className="border border-green-200 rounded-lg p-6 bg-green-50">
               <h2 className="text-lg font-semibold mb-2 text-green-800">Analysis Complete</h2>
               <p className="text-sm text-green-700 mb-4">
-                Your cognitive assessment has been completed successfully. View detailed results in the Results tab.
+                Your cognitive assessment has been completed successfully. View detailed results and brain analysis.
               </p>
-              <Button 
-                onClick={() => window.location.hash = '#results'}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                View Results →
-              </Button>
+              <div className="flex space-x-3">
+                <Button 
+                  onClick={() => navigate('/brain')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  🧠 View Brain Analysis
+                </Button>
+                <Button 
+                  onClick={() => navigate('/results')}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  📊 View Results →
+                </Button>
+              </div>
             </div>
           )}
         </div>

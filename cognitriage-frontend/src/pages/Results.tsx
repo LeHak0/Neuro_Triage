@@ -1,9 +1,68 @@
 import { Button } from "@/components/ui/button";
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 
 export default function Results() {
   const { analysisResult } = useAppContext();
+  const navigate = useNavigate();
   const { result } = analysisResult;
+
+  const handleExportPDF = () => {
+    // Generate PDF content
+    const printContent = document.createElement('div');
+    printContent.innerHTML = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h1>Cognitive Assessment Results</h1>
+        <div style="margin: 20px 0;">
+          <h2>Patient Information</h2>
+          <p>Age: ${result?.note?.patient_info?.age || 'N/A'}</p>
+          <p>Sex: ${result?.note?.patient_info?.sex || 'N/A'}</p>
+          <p>MoCA Score: ${result?.note?.patient_info?.moca_total || 'N/A'}/30</p>
+        </div>
+        <div style="margin: 20px 0;">
+          <h2>Risk Assessment</h2>
+          <p>Risk Tier: ${result?.triage?.risk_tier || 'N/A'}</p>
+          <p>Confidence: ${Math.round((result?.triage?.confidence_score || 0) * 100)}%</p>
+        </div>
+        <div style="margin: 20px 0;">
+          <h2>Imaging Findings</h2>
+          <p>Left Hippocampus: ${result?.note?.imaging_findings?.hippocampal_volumes_ml?.left_ml || 'N/A'} ml</p>
+          <p>Right Hippocampus: ${result?.note?.imaging_findings?.hippocampal_volumes_ml?.right_ml || 'N/A'} ml</p>
+          <p>MTA Score: ${result?.note?.imaging_findings?.mta_score || 'N/A'}/4</p>
+        </div>
+        <div style="margin: 20px 0;">
+          <p><small>Generated on ${new Date().toLocaleDateString()}</small></p>
+        </div>
+      </div>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent.innerHTML);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  const handleShareResults = () => {
+    const shareData = {
+      title: 'Cognitive Assessment Results',
+      text: `Risk Tier: ${result?.triage?.risk_tier || 'N/A'}, Confidence: ${Math.round((result?.triage?.confidence_score || 0) * 100)}%`,
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData).catch(console.error);
+    } else {
+      // Fallback: copy to clipboard
+      const textToCopy = `Cognitive Assessment Results\nRisk Tier: ${result?.triage?.risk_tier || 'N/A'}\nConfidence: ${Math.round((result?.triage?.confidence_score || 0) * 100)}%\nView full results: ${window.location.href}`;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        alert('Results copied to clipboard!');
+      }).catch(() => {
+        alert('Unable to share results. Please copy the URL manually.');
+      });
+    }
+  };
   
   console.log('Results page - analysisResult:', analysisResult);
   console.log('Results page - result:', result);
@@ -36,9 +95,8 @@ export default function Results() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Analysis Results</h1>
         <div className="flex space-x-2">
-          <Button variant="outline">📄 Export PDF</Button>
-          <Button variant="outline">📧 Share Results</Button>
-          <Button>🔄 Reprocess</Button>
+          <Button variant="outline" onClick={handleExportPDF}>📄 Export PDF</Button>
+          <Button variant="outline" onClick={handleShareResults}>📧 Share Results</Button>
         </div>
       </div>
 
@@ -133,7 +191,11 @@ export default function Results() {
           </div>
 
           <div className="mt-4 pt-4 border-t">
-            <Button variant="outline" className="w-full">
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => navigate('/recommendations')}
+            >
               💊 View Recommendations
             </Button>
           </div>
