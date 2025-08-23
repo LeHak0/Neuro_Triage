@@ -388,7 +388,14 @@ Best regards`);
                         <div className="space-y-2">
                           {trial.citations.slice(0, 2).map((citation: any, idx: number) => (
                             <div key={idx} className="text-sm">
-                              <div className="font-medium text-blue-800">{citation.title}</div>
+                              <a
+                                href={`https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-medium text-blue-800 hover:text-blue-600 hover:underline"
+                              >
+                                {citation.title}
+                              </a>
                               <div className="text-xs text-blue-600">
                                 {citation.authors} • {citation.journal} • {citation.year}
                               </div>
@@ -403,13 +410,6 @@ Best regards`);
                     )}
                     
                     <div className="flex items-center justify-between">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setExpandedTrial(expandedTrial === trial.nct_id ? null : trial.nct_id)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
                       <a
                         href={trial.url}
                         target="_blank"
@@ -467,14 +467,38 @@ Best regards`);
                     
                     <p className="text-sm text-gray-700 mb-4">{trial.match_reason}</p>
                     
+                    {/* Latest Research Section */}
+                    {trial.citations && trial.citations.length > 0 && (
+                      <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-blue-900"><BookOpen className="w-4 h-4 inline mr-1" /> Latest Research</h4>
+                          <span className="text-xs text-blue-600">{trial.citations.length} studies</span>
+                        </div>
+                        <div className="space-y-2">
+                          {trial.citations.slice(0, 2).map((citation: any, idx: number) => (
+                            <div key={idx} className="text-sm">
+                              <a
+                                href={`https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-medium text-blue-800 hover:text-blue-600 hover:underline"
+                              >
+                                {citation.title}
+                              </a>
+                              <div className="text-xs text-blue-600">
+                                {citation.authors} • {citation.journal} • {citation.year}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="text-xs text-blue-600 mt-2">
+                          <Lightbulb className="w-3 h-3 inline mr-1" />
+                          These studies provide scientific context for treatment approaches in {trial.title.split(' ')[0]}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setExpandedTrial(expandedTrial === trial.nct_id ? null : trial.nct_id)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
                       <a
                         href={trial.url}
                         target="_blank"
@@ -509,6 +533,7 @@ Best regards`);
                         <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
                           <span>• {trial.nct_id}</span>
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">{trial.phase}</span>
+                          <span><Building2 className="w-4 h-4 inline mr-1" /> {Array.isArray(trial.locations) ? trial.locations[0] : 'Multiple locations'}</span>
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -531,14 +556,38 @@ Best regards`);
                     
                     <p className="text-sm text-gray-700 mb-4">{trial.match_reason}</p>
                     
+                    {/* Latest Research Section */}
+                    {trial.citations && trial.citations.length > 0 && (
+                      <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-blue-900"><BookOpen className="w-4 h-4 inline mr-1" /> Latest Research</h4>
+                          <span className="text-xs text-blue-600">{trial.citations.length} studies</span>
+                        </div>
+                        <div className="space-y-2">
+                          {trial.citations.slice(0, 2).map((citation: any, idx: number) => (
+                            <div key={idx} className="text-sm">
+                              <a
+                                href={`https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-medium text-blue-800 hover:text-blue-600 hover:underline"
+                              >
+                                {citation.title}
+                              </a>
+                              <div className="text-xs text-blue-600">
+                                {citation.authors} • {citation.journal} • {citation.year}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="text-xs text-blue-600 mt-2">
+                          <Lightbulb className="w-3 h-3 inline mr-1" />
+                          These studies provide scientific context for treatment approaches in {trial.title.split(' ')[0]}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setExpandedTrial(expandedTrial === trial.nct_id ? null : trial.nct_id)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
                       <a
                         href={trial.url}
                         target="_blank"
