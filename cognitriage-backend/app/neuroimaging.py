@@ -235,28 +235,41 @@ class NeuroimagingProcessor:
             print(f"Error generating thumbnails: {e}")
             return {"axial": None, "coronal": None, "sagittal": None}
     
-    def _array_to_base64(self, array: np.ndarray) -> str:
-        """Convert numpy array to base64 encoded image"""
+    def _array_to_base64(self, array: np.ndarray) -> Optional[str]:
+        """Convert numpy array to base64 encoded image.
+        Handles constant arrays and NaNs gracefully; returns None on failure."""
         try:
-            # Normalize the array to 0-255 range
-            normalized = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
-            
+            # Replace NaNs/Infs and compute range safely
+            arr = np.nan_to_num(array, nan=0.0, posinf=0.0, neginf=0.0)
+            a_min = float(np.min(arr))
+            a_max = float(np.max(arr))
+            rng = a_max - a_min
+
+            if not np.isfinite(a_min) or not np.isfinite(a_max):
+                return None
+
+            if rng <= 0:
+                # Constant slice: render as uniform black image
+                normalized = np.zeros_like(arr, dtype=np.uint8)
+            else:
+                normalized = ((arr - a_min) / rng * 255).astype(np.uint8)
+
             plt.figure(figsize=(4, 4))
             plt.imshow(normalized.T, cmap='gray', origin='lower', vmin=0, vmax=255)
             plt.axis('off')
-            
+
             buffer = io.BytesIO()
             plt.savefig(buffer, format='png', bbox_inches='tight', dpi=100, pad_inches=0)
             buffer.seek(0)
-            
+
             image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
             plt.close()
-            
+
             return image_base64
         except Exception as e:
             print(f"Error creating base64 image: {e}")
             plt.close()  # Ensure plot is closed even on error
-            return ""
+            return None
     
     def _assess_image_quality(self, img: nib.Nifti1Image) -> Dict[str, Any]:
         """Assess basic image quality metrics"""

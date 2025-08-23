@@ -19,8 +19,10 @@ export default function BrainVisualization({ slices, volumes, qualityMetrics }: 
   console.log('Active view:', activeView);
   console.log('Current slice data:', slices[activeView] ? 'Present' : 'Missing');
 
-  // Check if we have any actual brain slice images
-  const hasSliceImages = slices && Object.values(slices).some(slice => slice !== null && slice !== undefined);
+  // Check if we have any actual brain slice images (non-empty base64 strings)
+  const hasSliceImages = !!slices && Object.values(slices).some(
+    (slice) => typeof slice === 'string' && slice.trim().length > 0
+  );
 
   console.log('BrainVisualization volumes:', volumes);
 

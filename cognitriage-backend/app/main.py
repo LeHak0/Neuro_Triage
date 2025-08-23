@@ -12,8 +12,11 @@ import re
 from datetime import datetime
 import io
 import uuid
+from uuid import uuid4
 import hashlib
+import time
 from Bio import Entrez
+from .neuroimaging import process_uploaded_nifti
 
 app = FastAPI()
 
@@ -661,8 +664,8 @@ async def get_demo_nifti():
     import os
     from fastapi.responses import FileResponse
     
-    # Path to demo NIFTI file - use absolute path
-    full_path = "/Users/hakim/Desktop/NeuroHack/neuro-triage/nii files/niivue-images/chris_t1.nii.gz"
+    # Path to demo NIFTI file - use relative path
+    full_path = os.path.join(os.path.dirname(__file__), "..", "..", "nii files", "niivue-images", "chris_t1.nii.gz")
     
     if os.path.exists(full_path):
         return FileResponse(
@@ -747,7 +750,7 @@ async def demo_submit(background_tasks: BackgroundTasks):
         
         # Create job and run pipeline
         job_id = str(uuid.uuid4())
-        jobs[job_id] = {"status": "processing", "progress": 0, "current_agent": "starting"}
+        jobs[job_id] = {"status": "processing", "progress": 0, "current_agent": "starting", "agents": {}}
         
         
         def run_demo_pipeline():
@@ -773,8 +776,6 @@ async def demo_submit(background_tasks: BackgroundTasks):
                 jobs[job_id]["agents"]["Imaging_Feature_Agent"]["status"] = "running"
                 try:
                     # Process the NIFTI file directly using neuroimaging module
-                    from neuroimaging import process_uploaded_nifti
-                    
                     # Save demo file temporarily
                     demo_file = demo_files[0]
                     with tempfile.NamedTemporaryFile(delete=False, suffix='.nii.gz') as tmp_file:
@@ -873,7 +874,7 @@ async def demo_pathology(background_tasks: BackgroundTasks):
     """Demo submission using real T2-weighted brain MRI data"""
     try:
         # Use chris_t2.nii.gz as it may show different pathology patterns than T1
-        demo_file_path = "/Users/hakim/Desktop/NeuroHack/neuro-triage/nii files/niivue-images/chris_t2.nii.gz"
+        demo_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "nii files", "niivue-images", "chris_t2.nii.gz")
         
         print(f"Looking for demo file at: {demo_file_path}")
         print(f"File exists: {os.path.exists(demo_file_path)}")
@@ -898,7 +899,7 @@ async def demo_pathology(background_tasks: BackgroundTasks):
         
         # Create job and run pipeline
         job_id = str(uuid.uuid4())
-        jobs[job_id] = {"status": "processing", "progress": 0, "current_agent": "starting"}
+        jobs[job_id] = {"status": "processing", "progress": 0, "current_agent": "starting", "agents": {}}
         
         print(f"Starting pathology demo pipeline with job_id: {job_id}")
         
@@ -925,7 +926,7 @@ async def demo_pathology(background_tasks: BackgroundTasks):
                 jobs[job_id]["agents"]["Imaging_Feature_Agent"]["status"] = "running"
                 try:
                     # Process the NIFTI file directly using neuroimaging module
-                    from neuroimaging import process_uploaded_nifti
+                    # using process_uploaded_nifti imported at module level
                     
                     # Save demo file temporarily
                     demo_file = demo_files[0]
