@@ -48,7 +48,7 @@ export default function BrainVisualization({
 }: BrainVisualizationProps) {
   const [activeView, setActiveView] = useState<'axial' | 'coronal' | 'sagittal'>('axial');
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const [showHeatmap, setShowHeatmap] = useState(true);
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   // Check if we have any actual brain slice images (non-empty base64 strings)
   const hasSliceImages = !!slices && Object.values(slices).some(
