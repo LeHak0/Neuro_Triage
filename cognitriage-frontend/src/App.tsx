@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { submitCase, getStatus, getResult, type StatusResponse, type ResultResponse, type RiskTier } from "./lib/api"
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { getStatus, getResult, type StatusResponse, type ResultResponse, type RiskTier } from "./lib/api"
 import { Button } from "@/components/ui/button"
+import KnowledgeGraph from './components/KnowledgeGraph';
+import BrainVisualization from './components/BrainVisualization';
 import "./index.css"
 
 type AgentName =
@@ -51,14 +53,60 @@ export default function App() {
 
   const useDemoCase = async () => {
     setMoca(24)
-    setAge(68)
+    setAge(72)
+    setSex("M")
+    setFiles([])
+    setJobId(null)
+    setStatus(null)
+    setResult(null)
+    
+    try {
+      // Use the new demo endpoint with real NIFTI processing
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/demo-submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Demo submission failed: ${response.statusText}`)
+      }
+      
+      const result = await response.json()
+      setJobId(result.job_id)
+    } catch (e) {
+      alert(`Demo error: ${(e as Error).message}`)
+    }
+  }
+
+  const usePathologyDemo = async () => {
+    setMoca(19)
+    setAge(78)
     setSex("F")
-    const blob = new Blob(["demo mri"], { type: "application/octet-stream" })
-    const demoFile = new File([blob], "demo_case_mci.nii.gz")
-    setFiles([demoFile])
-    setTimeout(() => {
-      void startSubmit()
-    }, 10)
+    setFiles([])
+    setJobId(null)
+    setStatus(null)
+    setResult(null)
+    
+    try {
+      // Use the pathology demo endpoint
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/demo-pathology`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Pathology demo submission failed: ${response.statusText}`)
+      }
+      
+      const result = await response.json()
+      setJobId(result.job_id)
+    } catch (e) {
+      alert(`Pathology demo error: ${(e as Error).message}`)
+    }
   }
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -83,7 +131,11 @@ export default function App() {
   }
 
   const canSubmit = useMemo(() => {
-    return files.length > 0 && typeof moca === "number" && moca >= 0 && moca <= 30 && typeof age === "number" && age > 0
+    // Allow submission if at least one file is present and any provided values are valid
+    const hasFiles = files.length > 0
+    const mocaValid = typeof moca === "number" ? moca >= 0 && moca <= 30 : true
+    const ageValid = typeof age === "number" ? age > 0 : true
+    return hasFiles && mocaValid && ageValid
   }, [files, moca, age])
 
   const startSubmit = async () => {
@@ -92,8 +144,25 @@ export default function App() {
     setStatus(null)
     setResult(null)
     try {
-      const res = await submitCase(files, { total: Number(moca) }, { age: Number(age), sex })
-      setJobId(res.job_id)
+      // Use sensible defaults if user didn't provide MoCA/Age
+      const mocaVal = typeof moca === "number" ? moca : 24
+      const ageVal = typeof age === "number" ? age : 70
+      const API = (import.meta as any).env.VITE_API_URL || 'http://127.0.0.1:8000'
+      const fd = new FormData()
+      files.forEach(f => fd.append('files', f))
+      fd.append('moca', JSON.stringify({ total: Number(mocaVal) }))
+      fd.append('meta', JSON.stringify({ age: Number(ageVal), sex }))
+
+      const resp = await fetch(`${API}/api/submit`, {
+        method: 'POST',
+        body: fd,
+      })
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '')
+        throw new Error(text || `Submit failed: ${resp.status} ${resp.statusText}`)
+      }
+      const data = await resp.json()
+      setJobId(data.job_id)
     } catch (e) {
       alert(`Submit error: ${(e as Error).message}`)
     }
@@ -218,15 +287,18 @@ export default function App() {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
-            <Button variant="outline" onClick={useDemoCase} aria-label="Use demo case">
-              Use Demo Case
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="outline" onClick={useDemoCase} aria-label="Use healthy demo case" className="whitespace-nowrap">
+              Use Demo Case (Healthy)
             </Button>
-            <Button onClick={startSubmit} disabled={!canSubmit} aria-label="Start analysis">
+            <Button variant="outline" onClick={usePathologyDemo} aria-label="Use pathology demo case" className="bg-red-50 hover:bg-red-100 text-red-700 border-red-300 whitespace-nowrap">
+              Use Pathology Demo
+            </Button>
+            <Button onClick={startSubmit} disabled={!canSubmit} aria-label="Start analysis" className="whitespace-nowrap">
               Start Analysis
             </Button>
             {jobId && (
-              <span className="text-xs text-zinc-600" aria-live="polite">
+              <span className="text-xs text-zinc-600 truncate max-w-[160px]" aria-live="polite">
                 Job: {jobId.slice(0, 8)}…
               </span>
             )}
@@ -307,6 +379,45 @@ export default function App() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Brain Visualization Panel */}
+        <section className="lg:col-span-12 mb-6">
+          {result?.result?.note?.imaging_findings ? (
+            <>
+              {console.log('Rendering BrainVisualization with:', result.result.note.imaging_findings)}
+              <BrainVisualization
+                slices={result.result.note.imaging_findings.thumbnails || {}}
+                volumes={result.result.note.imaging_findings}
+                qualityMetrics={result.result.note.imaging_findings.quality_metrics}
+              />
+            </>
+          ) : result?.result ? (
+            <div className="border border-zinc-200 rounded-lg p-8 text-center">
+              <div className="text-4xl mb-4">🧠</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Brain Imaging Analysis</h3>
+              <p className="text-sm text-zinc-600">Processing completed but no imaging data available.</p>
+            </div>
+          ) : (
+            <div className="border border-zinc-200 rounded-lg p-8 text-center">
+              <div className="text-4xl mb-4">🧠</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Brain Imaging Analysis</h3>
+              <p className="text-sm text-zinc-600">Upload NIFTI files and start analysis to view interactive brain visualization.</p>
+            </div>
+          )}
+        </section>
+
+        {/* Knowledge Graph Panel */}
+        <section className="lg:col-span-12 mb-6">
+          {result?.result ? (
+            <KnowledgeGraph data={result.result} />
+          ) : (
+            <div className="border border-zinc-200 rounded-lg p-8 text-center">
+              <div className="text-4xl mb-4">🔗</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Knowledge Graph</h3>
+              <p className="text-sm text-zinc-600">Process patient data to view interactive knowledge graph of neuroimaging relationships.</p>
+            </div>
+          )}
         </section>
 
         {/* evidence_panel */}

@@ -14,6 +14,12 @@ pydicom = "^3.0.1"
 numpy = "^2.3.2"
 pillow = "^11.3.0"
 python-multipart = "^0.0.20"
+aiohttp = "^3.9.0"
+biopython = "^1.84"
+nilearn = "^0.10.4"
+scipy = "^1.14.0"
+scikit-image = "^0.24.0"
+matplotlib = "^3.9.0"
 
 
 [build-system]
