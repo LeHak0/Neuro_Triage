@@ -9,42 +9,18 @@ interface BrainSlice {
   sagittal_heatmap?: string;
 }
 
-interface HeatmapCoordinate {
-  x: number;
-  y: number;
-  intensity: number;
-  region: string;
-}
-
-interface HeatmapData {
-  axial: HeatmapCoordinate[];
-  coronal: HeatmapCoordinate[];
-  sagittal: HeatmapCoordinate[];
-}
-
-interface AbnormalityRegion {
-  name: string;
-  coordinates: number[];
-  abnormality_score: number;
-  description: string;
-  severity: string;
-  color: string;
-}
-
 interface BrainVisualizationProps {
   slices: BrainSlice;
   volumes: any;
   qualityMetrics: any;
-  heatmapData?: HeatmapData;
-  abnormalityRegions?: Record<string, AbnormalityRegion>;
+  heatmapData?: any;
 }
 
 export default function BrainVisualization({ 
   slices, 
   volumes, 
   qualityMetrics, 
-  heatmapData,
-  abnormalityRegions 
+  heatmapData 
 }: BrainVisualizationProps) {
   const [activeView, setActiveView] = useState<'axial' | 'coronal' | 'sagittal'>('axial');
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
@@ -55,7 +31,7 @@ export default function BrainVisualization({
     (slice) => typeof slice === 'string' && slice.trim().length > 0
   );
 
-  console.log('BrainVisualization props:', { slices, volumes, qualityMetrics, heatmapData, abnormalityRegions });
+  console.log('BrainVisualization props:', { slices, volumes, qualityMetrics, heatmapData });
   console.log('BrainVisualization - slices type:', typeof slices);
   console.log('BrainVisualization - slices value:', slices);
   console.log('Active view:', activeView);
@@ -177,47 +153,6 @@ export default function BrainVisualization({
                       className="absolute inset-0 w-full h-full object-contain"
                     />
                   )}
-                  
-                  {/* Interactive Region Overlays */}
-                  {abnormalityRegions && Object.entries(abnormalityRegions).map(([regionKey, region]) => (
-                    <div
-                      key={regionKey}
-                      className="absolute cursor-pointer hover:opacity-75 transition-opacity"
-                      style={{
-                        left: `${region.coordinates[0]}%`,
-                        top: `${region.coordinates[1]}%`,
-                        width: '20px',
-                        height: '20px',
-                        backgroundColor: region.color,
-                        borderRadius: '50%',
-                        border: '2px solid white',
-                        transform: 'translate(-50%, -50%)',
-                        boxShadow: selectedRegion === regionKey ? '0 0 10px rgba(255,255,255,0.8)' : 'none'
-                      }}
-                      onClick={() => handleRegionClick(regionKey)}
-                      title={`${region.name} - ${region.severity} (${region.abnormality_score.toFixed(2)})`}
-                    />
-                  ))}
-                  
-                  {/* Interactive Heatmap Points */}
-                  {heatmapData && heatmapData[activeView] && heatmapData[activeView].map((coordinate, index) => (
-                    <div
-                      key={`heatmap-${index}`}
-                      className="absolute cursor-pointer hover:scale-110 transition-transform"
-                      style={{
-                        left: `${coordinate.x}%`,
-                        top: `${coordinate.y}%`,
-                        width: '12px',
-                        height: '12px',
-                        backgroundColor: `rgba(255, 0, 0, ${coordinate.intensity})`,
-                        borderRadius: '50%',
-                        border: '1px solid rgba(255,255,255,0.8)',
-                        transform: 'translate(-50%, -50%)',
-                        zIndex: 10
-                      }}
-                      title={`${coordinate.region} - Intensity: ${coordinate.intensity.toFixed(2)}`}
-                    />
-                  ))}
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-400">
