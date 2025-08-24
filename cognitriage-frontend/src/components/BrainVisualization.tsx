@@ -23,7 +23,6 @@ export default function BrainVisualization({
   heatmapData 
 }: BrainVisualizationProps) {
   const [activeView, setActiveView] = useState<'axial' | 'coronal' | 'sagittal'>('axial');
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
 
   // Check if we have any actual brain slice images (non-empty base64 strings)
@@ -52,10 +51,6 @@ export default function BrainVisualization({
   }
   
   console.log('BrainVisualization volumes:', volumes);
-
-  const handleRegionClick = (regionKey: string) => {
-    setSelectedRegion(selectedRegion === regionKey ? null : regionKey);
-  };
 
   // Safety checks for data structure
   if (!volumes) {
