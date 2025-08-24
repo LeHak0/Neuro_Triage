@@ -194,6 +194,58 @@ Generated on ${currentDate}`;
         </div>
       </div>
 
+      {/* Immediate Actions Section */}
+      <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-6 border border-red-200">
+        <h2 className="text-lg font-semibold mb-4 text-red-800">Immediate Actions (Next 48-72 Hours)</h2>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Safety Assessment */}
+          <div className="space-y-3">
+            <h3 className="text-md font-medium text-red-700 mb-3">Safety Assessment</h3>
+            <div className="space-y-2">
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-red-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <span className="text-sm text-gray-700">Driving evaluation recommended</span>
+              </div>
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-red-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <span className="text-sm text-gray-700">Medication management review</span>
+              </div>
+            </div>
+          </div>
+
+          {/* STAT Laboratory Studies */}
+          <div className="space-y-3">
+            <h3 className="text-md font-medium text-red-700 mb-3">STAT Laboratory Studies</h3>
+            <div className="space-y-2">
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-orange-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <span className="text-sm text-gray-700">B12, TSH, vitamin D levels</span>
+              </div>
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-orange-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <span className="text-sm text-gray-700">Comprehensive metabolic panel</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Urgent Referrals */}
+          <div className="space-y-3">
+            <h3 className="text-md font-medium text-red-700 mb-3">Urgent Referrals</h3>
+            <div className="space-y-2">
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <span className="text-sm text-gray-700">Neurology consultation within 2 weeks</span>
+              </div>
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <span className="text-sm text-gray-700">Consider neuropsychology if available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Risk Summary */}
         <div className="border border-zinc-200 rounded-lg p-6">
@@ -268,43 +320,46 @@ Generated on ${currentDate}`;
         </div>
       </div>
 
-      {/* Lifestyle Interventions */}
-      <div className="border border-zinc-200 rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-4">Lifestyle Interventions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {treatment_recommendations.lifestyle_interventions?.map((item: any, i: number) => (
-            <div key={i} className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
-              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                item.priority === 'high' ? 'bg-green-700' : 'bg-green-600'
-              }`}></div>
-              <div className="flex-1">
-                <span className="text-sm text-gray-700 block">{item.intervention}</span>
-                {item.evidence_level && (
-                  <span className="text-xs text-green-600">Evidence: Level {item.evidence_level}</span>
-                )}
-              </div>
-            </div>
-          )) || <div className="text-sm text-gray-500 col-span-full text-center py-4">No specific lifestyle interventions recommended</div>}
-        </div>
-      </div>
-
-      {/* Monitoring Schedule */}
-      {treatment_recommendations.monitoring_schedule?.length > 0 && (
+      {/* Lifestyle Interventions and Monitoring Schedule - Combined Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Lifestyle Interventions */}
         <div className="border border-zinc-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">Monitoring Schedule</h2>
+          <h2 className="text-lg font-semibold mb-4">Lifestyle Interventions</h2>
           <div className="space-y-3">
-            {treatment_recommendations.monitoring_schedule.map((item: any, i: number) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+            {treatment_recommendations.lifestyle_interventions?.map((item: any, i: number) => (
+              <div key={i} className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                  item.priority === 'high' ? 'bg-green-700' : 'bg-green-600'
+                }`}></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-700">{item.assessment}</span>
-                  <span className="text-xs text-gray-500 block">Priority: {item.priority}</span>
+                  <span className="text-sm text-gray-700 block">{item.intervention}</span>
+                  {item.evidence_level && (
+                    <span className="text-xs text-green-600">Evidence: Level {item.evidence_level}</span>
+                  )}
                 </div>
-                <span className="text-sm text-blue-600 font-medium">Every {item.frequency}</span>
               </div>
-            ))}
+            )) || <div className="text-sm text-gray-500 text-center py-4">No specific lifestyle interventions recommended</div>}
           </div>
         </div>
-      )}
+
+        {/* Monitoring Schedule */}
+        {treatment_recommendations.monitoring_schedule?.length > 0 && (
+          <div className="border border-zinc-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">Monitoring Schedule</h2>
+            <div className="space-y-3">
+              {treatment_recommendations.monitoring_schedule.map((item: any, i: number) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-gray-700">{item.assessment}</span>
+                    <span className="text-xs text-gray-500 block">Priority: {item.priority}</span>
+                  </div>
+                  <span className="text-sm text-blue-600 font-medium">Every {item.frequency}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Clinical Trials */}
       {highMatchTrials.length > 0 && (

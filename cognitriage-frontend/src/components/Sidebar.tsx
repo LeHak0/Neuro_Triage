@@ -10,7 +10,7 @@ const navigationItems = [
     name: 'Main',
     href: '/',
     icon: 'home',
-    description: 'Upload'
+    description: 'Uploads & Patient Info'
   },
   {
     name: 'Brain',

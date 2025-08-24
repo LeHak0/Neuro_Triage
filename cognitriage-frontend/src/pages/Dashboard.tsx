@@ -344,6 +344,34 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+
+          {/* Educational Info - Fixed panel at bottom */}
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 border border-green-200">
+            <h2 className="text-lg font-semibold mb-4 text-gray-800">Assessment Overview</h2>
+            <div className="space-y-3 text-sm text-gray-700">
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <span>Analyzes hippocampal volumes</span>
+              </div>
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <span>Compares to age-matched norms</span>
+              </div>
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <span>Identifies cognitive risk factors</span>
+              </div>
+              <div className="flex items-start">
+                <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                <span>Generates clinical recommendations</span>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-green-100 rounded-lg">
+              <p className="text-xs text-green-700">
+                Our AI-powered system provides comprehensive neuroimaging analysis to support early detection of cognitive decline and inform clinical decision-making.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
